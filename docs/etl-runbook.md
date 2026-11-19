@@ -37,7 +37,7 @@
 | `pengajuan_cuti` | `pengajuan` | 1.987 | **1.987** (tanpa buang) |
 | `presensi` (12 bln) | `presensi` | 10.662 | **10.636** (lihat §3) |
 | `konfigurasi_lokasi` | `.env` → `config/presensi.php` | 1 | 3 variabel |
-| — | `saldo_cuti` (init) | — | **±196 baris** (lihat §5) |
+| — | `saldo_cuti` (init) | — | **±175 baris** (Y=2026; lihat §5) |
 
 ### 2.1 Detail kolom
 
@@ -90,6 +90,7 @@ Ditemukan dari analisis langsung — semua aturan ini **wajib** ada di command:
    → **Drop** baris `c/s/d` di hari yang tidak punya shift di `konfigurasi_jam_kerja` pegawai itu. *(Di jendela 12 bulan: 0 — semua kebetulan hari kerja.)*
 7. **`kode_jam_kerja` kapitalisasi campur:** `'Jk01'` (3 baris) → **uppercase** sebelum lookup; kalau tidak cocok setelah uppercase → `NULL` + log.
 8. **Waktu:** `jam_in/out` `NULL` wajar untuk baris non-hadir; `00:00:00` hanya muncul di baris header (gugur di butir 1).
+9. **String `'null'` → NULL:** 65 baris `pegawai.foto` berisi teks `'null'` (bukan SQL NULL) — dinormalkan jadi NULL supaya UI tidak menampilkan gambar rusak bernama "null". Kolom lain dicek dengan aturan yang sama.
 
 ---
 
@@ -121,11 +122,13 @@ Kenapa perlu: presensi hanya 12 bulan, tetapi rollover 1 Januari 2026 sudah lewa
 
 ```
 saldo_cuti(pegawai, C01, tahun_sumber = T) = min( max(12 − hariKerja(pengajuanC01approved T), 0), 6 )
-   untuk T ∈ {2024, 2025}       ← jendela 2 tahun terhadap 2026
+   untuk T ∈ {Y-1, Y-2}         ← Y = tahun saat ETL dijalankan (jendela 2 tahun)
    hasil 0 → tidak dibuat baris
 ```
 
-Hitungan awal dari dump (diverifikasi): pemakaian C01 per tahun — 2024: 242 hari, 2025: 299 hari, 2026: 58 hari; 52 pegawai pernah memakai. **Angka final baris & total saldo dicetak oleh `--dry-run`** dan dipakai sebagai pembanding verifikasi (ekspektasi kasar: ±196 baris, sisa 2024 ≈ 526 hari, sisa 2025 ≈ 504 hari).
+`hariKerja` = hari **dengan shift** di `konfigurasi_jam_kerja` pegawai tersebut (aturan bisnis #1 `database-design.md`) — basis yang sama dengan yang akan dipakai sistem baru setelah go-live, sehingga rollover 2027 konsisten.
+
+Hitungan awal dari dump (diverifikasi, basis shift, Y=2026): pemakaian C01 agregat — 2024: 290 hari, 2025: 347 hari, 2026: 60 hari. **Angka final baris & total saldo dicetak oleh `--dry-run`** dan dipakai sebagai pembanding verifikasi (ekspektasi kasar Y=2026: **±175 baris**, total saldo 2024 ≈ **499** hari, total saldo 2025 ≈ **487** hari).
 
 > Idempoten: `upsert` pada `UNIQUE(id_pegawai, id_cuti, tahun_sumber)` — run ulang tidak menggandakan.
 
