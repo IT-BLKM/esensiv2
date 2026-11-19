@@ -172,6 +172,7 @@ git push && gh pr create --fill --base main       # buka PR
 |---|---|
 | [`docs/database-design.md`](docs/database-design.md) | Rancangan database final + aturan bisnis cuti |
 | [`docs/panduan-kolaborasi.md`](docs/panduan-kolaborasi.md) | Alur git/GitHub untuk tim: branch, commit, PR, merge, konflik |
+| [`docs/etl-runbook.md`](docs/etl-runbook.md) | Langkah impor data lama presensigps (issue #56) |
 | [Issues](https://github.com/IT-BLKM/esensiv2/issues) | Daftar tugas 53 issue dalam 9 fase (Fase 0–8) |
 
 ---
