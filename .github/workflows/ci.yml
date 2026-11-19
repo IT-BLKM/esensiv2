@@ -1,0 +1,137 @@
+name: CI
+
+# Otomatis jalan tiap ada push ke main atau pembukaan/perubahan Pull Request
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Run terbaru membatalkan run lama yang masih jalan (hemat menit kuota)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: PINT — cek gaya kode (format, import, dll). Gagal = file belum rapi.
+  # ---------------------------------------------------------------------------
+  pint:
+    name: Pint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, dom, fileinfo, mysql, pdo_mysql
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependency
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # --test = hanya MENGUJI, tidak mengubah file.
+      # Lokal: vendor/bin/pint (tanpa --test) untuk memperbaiki otomatis.
+      - name: Cek gaya kode
+        run: vendor/bin/pint --test
+
+  # ---------------------------------------------------------------------------
+  # Job 2: PEST — jalankan seluruh test. Database = MariaDB (sama dg produksi).
+  # ---------------------------------------------------------------------------
+  pest:
+    name: Pest
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: secret
+          MARIADB_DATABASE: presensi_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: presensi_test
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, dom, fileinfo, mysql, pdo_mysql
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependency
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Siapkan .env + APP_KEY
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      # phpunit.xml bawaan Laravel menyetel DB_CONNECTION=sqlite, tapi nilai
+      # <env> TANPA force tidak menimpa environment yang sudah ada - jadi env
+      # di atas yang dipakai. Guard ini memastikan itu benar-benar terjadi;
+      # kalau gagal, test jalan di sqlite dan beda dengan produksi.
+      - name: Pastikan CI memakai MariaDB (bukan sqlite phpunit)
+        run: |
+          ACTUAL="$(php -r 'echo getenv("DB_CONNECTION");')"
+          echo "DB_CONNECTION aktif: $ACTUAL"
+          if [ "$ACTUAL" != "mysql" ]; then
+            echo "::error::DB_CONNECTION=$ACTUAL, seharusnya mysql (MariaDB CI). Cek env: di workflow ini dan baris DB_* di phpunit.xml."
+            exit 1
+          fi
+
+      # Test dengan RefreshDatabase otomatis migrate - tidak perlu langkah migrate manual.
+      - name: Jalankan test
+        run: vendor/bin/pest
+
+  # ---------------------------------------------------------------------------
+  # Job 3 (opsional): LARASTAN — aktifkan setelah issue Larastan selesai.
+  # Hapus tanda # di blok ini untuk menyalakannya.
+  # ---------------------------------------------------------------------------
+  # phpstan:
+  #   name: Larastan
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: shivammathur/setup-php@v2
+  #       with:
+  #         php-version: '8.5'
+  #         coverage: none
+  #     - uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/composer
+  #         key: composer-${{ hashFiles('composer.lock') }}
+  #         restore-keys: composer-
+  #     - run: composer install --prefer-dist --no-progress --no-interaction
+  #     - run: vendor/bin/phpstan analyse --memory-limit=1G
