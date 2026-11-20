@@ -14,14 +14,17 @@ test('stores a configuration for Minggu', function () {
 });
 
 test('accepts the same hari for different pegawai', function () {
-    KonfigurasiJamKerja::factory()->create(['id_pegawai' => 1, 'hari' => 'Senin']);
-    KonfigurasiJamKerja::factory()->create(['id_pegawai' => 2, 'hari' => 'Senin']);
+    KonfigurasiJamKerja::factory()->create(['hari' => 'Senin']);
+    KonfigurasiJamKerja::factory()->create(['hari' => 'Senin']);
 
     $this->assertDatabaseCount('konfigurasi_jam_kerja', 2);
 });
 
 test('rejects two shifts for the same pegawai and hari', function () {
-    KonfigurasiJamKerja::factory()->create(['id_pegawai' => 1, 'hari' => 'Senin']);
+    $first = KonfigurasiJamKerja::factory()->create(['hari' => 'Senin']);
 
-    KonfigurasiJamKerja::factory()->create(['id_pegawai' => 1, 'hari' => 'Senin']);
+    KonfigurasiJamKerja::factory()->create([
+        'id_pegawai' => $first->id_pegawai,
+        'hari' => 'Senin',
+    ]);
 })->throws(QueryException::class);
