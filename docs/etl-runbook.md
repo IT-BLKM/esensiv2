@@ -32,12 +32,12 @@
 | `departemen` | `departemen` | 19 | **19** |
 | `jam_kerja` | `jam_kerja` | 3 | **3** |
 | `master_cuti` | `cuti` (+ aturan baru) | 4 | **4** |
-| `pegawai` + `users` | `user` + `pegawai` | 98 (+1 admin lama) | **98 user pegawai + 1 admin seeder** |
-| `konfigurasi_jamkerja` | `konfigurasi_jam_kerja` | 1.256 | **682** (lihat §3) |
+| `pegawai` + `users` | `user` + `pegawai` | 98 (+1 admin lama) | **97 user pegawai + 1 admin seeder** (1 pegawai NIP 16 digit gugur, lihat §3.1) |
+| `konfigurasi_jamkerja` | `konfigurasi_jam_kerja` | 1.256 | **677** (lihat §3) |
 | `pengajuan_cuti` | `pengajuan` | 1.987 | **1.987** (tanpa buang) |
-| `presensi` (12 bln) | `presensi` | 10.662 | **10.636** (lihat §3) |
+| `presensi` (12 bln) | `presensi` | 10.662 | **10.602** (lihat §3) |
 | `konfigurasi_lokasi` | `.env` → `config/presensi.php` | 1 | 3 variabel |
-| — | `saldo_cuti` (init) | — | **±196 baris** (lihat §5) |
+| — | `saldo_cuti` (init) | — | **173 baris** (lihat §5) |
 
 ### 2.1 Detail kolom
 
@@ -75,13 +75,15 @@ Ditemukan dari analisis langsung — semua aturan ini **wajib** ada di command:
 
 1. **Baris header nyangkut (2 baris):** `id=12606` & `id=20659` berisi teks header (`nip`, `kode`, `foto_in`, …) dengan tanggal `0000-00-00`.
    → **Drop** semua baris dengan tanggal tidak valid / `0000-00-00` / `nip` bukan 18 digit.
-2. **NIP asing (4 baris presensi, 2 NIP):** `197502131006041011`, `197425091998031003` (pegawai sudah tidak ada di master) + `1601226106010005`, `196506101989011001` (di konfigurasi jadwal).
-   → **Drop** baris yang `nip` tidak ada di tabel `pegawai`; catat ke log.
+2. **NIP tidak valid / asing:**
+   - **NIP bukan 18 digit:** pegawai `1803144103030001` (Lia Tri Aida Saputri, 16 digit) **beserta seluruh barisnya** — 1 pegawai, 5 jadwal, 34 presensi (di jendela) → pegawai valid tinggal **97**.
+   - **NIP asing:** `197502131006041011`, `197425091998031003` (presensi, sudah tidak ada di master) + `1601226106010005` (7 jadwal, 16 digit) + `196506101989011001` (14 jadwal, 18 digit tapi bukan pegawai).
+   → **Drop** baris yang `nip` tidak 18 digit atau tidak ada di tabel `pegawai`; catat ke log.
 3. **Duplikat:**
    - `presensi`: **59 pasang `(nip, tgl)`** (26 di antaranya di jendela 12 bulan) — melanggar `UNIQUE(tgl_presensi, id_pegawai)`.
      → **Drop** dengan pemenang = baris paling lengkap (`jam_in` terisi → `jam_out` terisi → `foto` terisi → `id` terkecil).
-   - `konfigurasi_jam_kerja`: **561 duplikat `(nip, hari)`** (560 identik + 1 konflik di NIP asing yang memang di-drop).
-     → **Drop** simpan kemunculan pertama. Hasil bersih: **682 baris** (98 pegawai; 4 hari kosong milik 2 pegawai — biarkan, aturan default hanya untuk pegawai tanpa konfigurasi sama sekali).
+   - `konfigurasi_jam_kerja`: **553 duplikat `(nip, hari)`** (drop kemunculan pertama, setelah NIP bermasalah dibuang di butir 2).
+     → **Drop** simpan kemunculan pertama. Hasil bersih: **677 baris** (dari 1.256: −553 duplikat −12 NIP tidak 18 digit −14 NIP bukan pegawai; 4 hari kosong milik 2 pegawai — biarkan, aturan default hanya untuk pegawai tanpa konfigurasi sama sekali).
 4. **Status presensi ≠ jenis pengajuan (5 baris):** presensi `'c'` yang menunjuk pengajuan `d` (DL).
    → **Selaraskan ke jenis pengajuan** (`d`) — pengajuan adalah sumber kebenaran; konsisten dengan `id_pengajuan` + CHECK di skema baru. *(Di jendela 12 bulan jumlahnya 0; aturan tetap ditulis untuk keamanan.)*
 5. **Baris non-hadir tanpa kode pengajuan (2 baris: 1 `'c'`, 1 `'s'`):** pengajuannya tidak ada di dump.
@@ -99,15 +101,15 @@ Ditemukan dari analisis langsung — semua aturan ini **wajib** ada di command:
 1. departemen            (19)
 2. jam_kerja             (3)
 3. cuti                  (4)          ← angka keputusan #2, bukan salin jml_hari
-4. user + pegawai        (98 + 98)    ← email fiktif, hash acak; admin dari seeder
-5. konfigurasi_jam_kerja (682)
+4. user + pegawai        (97 + 97)    ← email fiktif, hash acak; admin dari seeder
+5. konfigurasi_jam_kerja (677)
 6. pengajuan             (1.987)      ← sekalian bangun peta kode_cuti → id baru (di memori)
-7. presensi 12 bulan     (10.636)     ← pakai peta dari langkah 6 + aturan §3
+7. presensi 12 bulan     (10.602)     ← pakai peta dari langkah 6 + aturan §3
 8. saldo_cuti init       (§5)
 9. konfigurasi lokasi    (.env)       ← manual, satu kali
 ```
 
-Jendela presensi: **365 hari ke belakang dari tanggal run** (argumen `--since=YYYY-MM-DD` untuk override). Dari dump saat ini: `>= 2025-11-19` → **10.662** baris valid → −26 duplikat = **10.636**.
+Jendela presensi: **365 hari ke belakang dari tanggal run** (argumen `--since=YYYY-MM-DD` untuk override). Dari dump saat ini: `>= 2025-11-19` → **10.662** baris valid → −34 baris NIP tidak 18 digit −26 duplikat = **10.602**.
 
 **Jangan impor:** file foto (`*-in.png`, `*-out.png`), lampiran (`doc_sid`), hash/password apa pun, file dump itu sendiri.
 
@@ -125,7 +127,7 @@ saldo_cuti(pegawai, C01, tahun_sumber = T) = min( max(12 − hariKerja(pengajuan
    hasil 0 → tidak dibuat baris
 ```
 
-Hitungan awal dari dump (diverifikasi): pemakaian C01 per tahun — 2024: 242 hari, 2025: 299 hari, 2026: 58 hari; 52 pegawai pernah memakai. **Angka final baris & total saldo dicetak oleh `--dry-run`** dan dipakai sebagai pembanding verifikasi (ekspektasi kasar: ±196 baris, sisa 2024 ≈ 526 hari, sisa 2025 ≈ 504 hari).
+Hitungan dari dump (diverifikasi 2×: `--dry-run` + hitungan independen): pemakaian C01 **basis hari dengan shift** per tahun — 2024: **290** hari, 2025: **347** hari, 2026: 60 hari; **52** pegawai pernah memakai. **Angka final baris & total saldo dicetak oleh `--dry-run`** dan dipakai sebagai pembanding verifikasi (ekspektasi: **173 baris** — 2024: 87 baris / 493 hari, 2025: 86 baris / 481 hari).
 
 > Idempoten: `upsert` pada `UNIQUE(id_pegawai, id_cuti, tahun_sumber)` — run ulang tidak menggandakan.
 
