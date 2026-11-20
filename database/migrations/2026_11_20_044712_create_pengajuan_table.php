@@ -40,7 +40,9 @@ return new class extends Migration
 
         if (Schema::hasTable('cuti')) {
             Schema::table('pengajuan', function (Blueprint $table) {
-                $table->foreign('id_cuti')->references('id')->on('cuti')->nullOnDelete();
+                // RESTRICT, bukan SET NULL: MySQL menolak referential action
+                // pada kolom yang juga dipakai CHECK constraint (error 3823).
+                $table->foreign('id_cuti')->references('id')->on('cuti')->restrictOnDelete();
             });
         }
 
