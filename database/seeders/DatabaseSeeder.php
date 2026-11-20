@@ -55,11 +55,6 @@ class DatabaseSeeder extends Seeder
 
             return;
         }
-
-        User::factory()->create([
-            'name' => 'Administrator',
-            'email' => self::ADMIN_EMAIL,
-        ]);
     }
 
     private function seedDepartemen(): Collection
