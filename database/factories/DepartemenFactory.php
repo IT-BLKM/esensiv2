@@ -1,0 +1,25 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Departemen;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<Departemen>
+ */
+class DepartemenFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'kode' => fake()->unique()->regexify('[A-Z]{2,4}'),
+            'nama' => fake()->unique()->company(),
+        ];
+    }
+}
