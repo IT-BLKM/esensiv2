@@ -25,7 +25,7 @@ test('rejects a pegawai with a duplicate nip', function () {
 })->throws(QueryException::class);
 
 test('rejects a pegawai with a duplicate user_id', function () {
-    Pegawai::factory()->create(['user_id' => 42]);
+    $existing = Pegawai::factory()->create();
 
-    Pegawai::factory()->create(['user_id' => 42]);
+    Pegawai::factory()->create(['user_id' => $existing->user_id]);
 })->throws(QueryException::class);
