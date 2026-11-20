@@ -1,22 +1,24 @@
 <?php
 
 use App\Models\Pengajuan;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
 
 test('stores a pengajuan with its approval audit columns', function () {
+    $approver = User::factory()->create();
     $pengajuan = Pengajuan::factory()->create([
         'status' => 'approved',
-        'disetujui_oleh' => 9,
+        'disetujui_oleh' => $approver->id,
         'disetujui_pada' => now(),
         'catatan' => 'Disetujui admin',
     ]);
 
     $this->assertModelExists($pengajuan);
     expect($pengajuan->status)->toBe('approved')
-        ->and($pengajuan->disetujui_oleh)->toBe(9)
+        ->and($pengajuan->disetujui_oleh)->toBe($approver->id)
         ->and($pengajuan->catatan)->toBe('Disetujui admin');
 });
 
@@ -25,11 +27,21 @@ test('database rejects cuti without id_cuti', function () {
 })->throws(QueryException::class);
 
 test('database rejects sakit with id_cuti', function () {
-    Pengajuan::factory()->create(['jenis' => 'sakit', 'id_cuti' => 1]);
+    $pengajuan = Pengajuan::factory()->create();
+
+    Pengajuan::factory()->create([
+        'jenis' => 'sakit',
+        'id_cuti' => $pengajuan->id_cuti,
+    ]);
 })->throws(QueryException::class);
 
 test('database rejects dl with id_cuti', function () {
-    Pengajuan::factory()->create(['jenis' => 'dl', 'id_cuti' => 1]);
+    $pengajuan = Pengajuan::factory()->create();
+
+    Pengajuan::factory()->create([
+        'jenis' => 'dl',
+        'id_cuti' => $pengajuan->id_cuti,
+    ]);
 })->throws(QueryException::class);
 
 test('allows sakit and dl without id_cuti', function () {
