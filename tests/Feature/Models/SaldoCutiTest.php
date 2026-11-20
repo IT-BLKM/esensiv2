@@ -9,7 +9,6 @@ uses(LazilyRefreshDatabase::class);
 
 test('stores a balance for its source year', function () {
     $saldo = SaldoCuti::factory()->create([
-        'id_pegawai' => 1,
         'tahun_sumber' => 2025,
         'saldo' => 6,
     ]);
@@ -21,14 +20,13 @@ test('stores a balance for its source year', function () {
 
 test('allows the same cuti for different source years', function () {
     $cuti = Cuti::factory()->create();
-
-    SaldoCuti::factory()->create([
-        'id_pegawai' => 1,
+    $first = SaldoCuti::factory()->create([
         'id_cuti' => $cuti->id,
         'tahun_sumber' => 2025,
     ]);
+
     SaldoCuti::factory()->create([
-        'id_pegawai' => 1,
+        'id_pegawai' => $first->id_pegawai,
         'id_cuti' => $cuti->id,
         'tahun_sumber' => 2026,
     ]);
@@ -39,31 +37,21 @@ test('allows the same cuti for different source years', function () {
 test('allows the same cuti and year for different pegawai', function () {
     $cuti = Cuti::factory()->create();
 
-    SaldoCuti::factory()->create([
-        'id_pegawai' => 1,
-        'id_cuti' => $cuti->id,
-        'tahun_sumber' => 2026,
-    ]);
-    SaldoCuti::factory()->create([
-        'id_pegawai' => 2,
-        'id_cuti' => $cuti->id,
-        'tahun_sumber' => 2026,
-    ]);
+    SaldoCuti::factory()->create(['id_cuti' => $cuti->id, 'tahun_sumber' => 2026]);
+    SaldoCuti::factory()->create(['id_cuti' => $cuti->id, 'tahun_sumber' => 2026]);
 
     $this->assertDatabaseCount('saldo_cuti', 2);
 });
 
 test('rejects a duplicate pegawai, cuti and source year', function () {
     $cuti = Cuti::factory()->create();
-
-    SaldoCuti::factory()->create([
-        'id_pegawai' => 1,
+    $first = SaldoCuti::factory()->create([
         'id_cuti' => $cuti->id,
         'tahun_sumber' => 2026,
     ]);
 
     SaldoCuti::factory()->create([
-        'id_pegawai' => 1,
+        'id_pegawai' => $first->id_pegawai,
         'id_cuti' => $cuti->id,
         'tahun_sumber' => 2026,
     ]);
