@@ -25,13 +25,30 @@ return new class extends Migration
         // Laravel 13 belum menyediakan builder CHECK constraint, jadi dibuat
         // dengan SQL mentah yang sesuai driver database.
         if (DB::getDriverName() === 'sqlite') {
+            // SQLite tidak bisa ALTER TABLE ADD CONSTRAINT. FK ditanam bersama
+            // CHECK langsung di CREATE TABLE: kalau FK ditambahkan lewat
+            // Schema::table(), SQLite akan rebuild tabel dan CHECK hilang.
             $this->createSqliteTable();
         } else {
             $this->createSqlTable();
+            $this->addForeignKeys();
         }
+    }
 
-        // FK dipasang hanya jika tabel referensinya sudah tersedia.
-        // `pegawai` ada di PR #59, `cuti` di PR #60, `user` di PR #54.
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('pengajuan');
+    }
+
+    /**
+     * FK dipasang hanya jika tabel referensinya sudah tersedia.
+     * `pegawai` ada di PR #59, `cuti` di PR #60, `user` di PR #54.
+     */
+    private function addForeignKeys(): void
+    {
         if (Schema::hasTable('pegawai')) {
             Schema::table('pengajuan', function (Blueprint $table) {
                 $table->foreign('id_pegawai')->references('id')->on('pegawai')->cascadeOnDelete();
@@ -51,14 +68,6 @@ return new class extends Migration
                 $table->foreign('disetujui_oleh')->references('id')->on('user')->nullOnDelete();
             });
         }
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('pengajuan');
     }
 
     /**
@@ -93,11 +102,25 @@ return new class extends Migration
     }
 
     /**
-     * SQLite tidak bisa ALTER TABLE ADD CONSTRAINT, jadi CHECK ditanam
-     * langsung di CREATE TABLE.
+     * SQLite: CHECK dan FK ditanam di CREATE TABLE supaya tidak dihapus
+     * ketika skema di-rebuild.
      */
     private function createSqliteTable(): void
     {
+        $foreignKeys = [];
+
+        if (Schema::hasTable('pegawai')) {
+            $foreignKeys[] = 'CONSTRAINT pengajuan_id_pegawai_foreign FOREIGN KEY (id_pegawai) REFERENCES pegawai (id) ON DELETE CASCADE';
+        }
+
+        if (Schema::hasTable('cuti')) {
+            $foreignKeys[] = 'CONSTRAINT pengajuan_id_cuti_foreign FOREIGN KEY (id_cuti) REFERENCES cuti (id) ON DELETE RESTRICT';
+        }
+
+        if (Schema::hasTable('user')) {
+            $foreignKeys[] = 'CONSTRAINT pengajuan_disetujui_oleh_foreign FOREIGN KEY (disetujui_oleh) REFERENCES "user" (id) ON DELETE SET NULL';
+        }
+
         DB::statement(sprintf('
             CREATE TABLE pengajuan (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -114,8 +137,8 @@ return new class extends Migration
                 catatan VARCHAR(255) NULL,
                 created_at DATETIME NULL,
                 updated_at DATETIME NULL,
-                CONSTRAINT %s CHECK %s
-            )', self::CHECK_NAME, $this->checkExpression()));
+                CONSTRAINT %s CHECK %s%s
+            )', self::CHECK_NAME, $this->checkExpression(), $foreignKeys === [] ? '' : ','.PHP_EOL.implode(','.PHP_EOL, $foreignKeys)));
 
         DB::statement('CREATE INDEX pengajuan_id_pegawai_index ON pengajuan (id_pegawai)');
         DB::statement('CREATE INDEX pengajuan_status_index ON pengajuan (status)');
