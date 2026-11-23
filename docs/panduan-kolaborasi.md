@@ -1,4 +1,4 @@
-# Panduan Kolaborasi GitHub — presensigps
+# Panduan Kolaborasi GitHub — esensiv2
 
 > Untuk seluruh tim. Baca sekali dari atas ke bawah, lalu simpan sebagai pegangan.
 > Sebagian besar masalah tim pemula muncul karena **push langsung ke `main`** dan
@@ -335,5 +335,58 @@ buat branch  ──►  kerja  ──►  pint + pest hijau  ──►  commit +
                                             ▼
                               branch dihapus · issue tertutup · git pull lagi
 ```
+
+## 13. Konvensi route & struktur URL
+
+> Bagian ini **keputusan desain kode** (23 Nov 2026), ditulis di sini supaya jadi pegangan
+> sebelum route pertama `esensiv2` ditulis. Alasan panjangnya: route di `presensigps` berantakan —
+> mutasi lewat `GET`, baca data lewat `POST`, `{nip}` di URL tanpa policy, dua guard, nama tidak konsisten.
+> Jangan menyalin bentuk route lama.
+
+### Aturan yang wajib dipatuhi
+
+| # | Aturan | Masalah lama yang ditutup |
+|---|---|---|
+| 1 | **`GET` hanya membaca.** Semua perubahan data `POST`/`PATCH`/`DELETE` | `GET /pegawai/{nip}/resetpassword` & `.../delete` bisa dipicu CSRF lewat link |
+| 2 | **`Route::resource` + route model binding** — tidak ada `{nip}` manual di URL | `POST /pegawai/{nip}/update` tanpa cek pemilik = IDOR |
+| 3 | **Selalu `route()` di blade**, tanpa URL literal | sekali ganti prefix, semua tautan rusak |
+| 4 | **Satu guard `web`, satu halaman login, redirect by role** | dua guard, dua login, dua logout (`/proseslogin`, `/prosesloginadmin`) |
+| 5 | **Otorisasi di Policy**, bukan cek `role` di dalam controller | logika akses tercecer & mudah terlewat |
+| 6 | **Validasi input di FormRequest** | validasi tercampur di controller |
+| 7 | **`throttle:5,1` di login + pesan error generik** | brute force tanpa jejak |
+| 8 | **Hanya sintaks array** `[X::class, 'method']` | string `'App\Http\Controllers\X@method'` (gaya Laravel ≤8) |
+| 9 | **Satu resource `Cuti`**, jenis = data (C01–C04), bukan 4 controller | `Dinasluar` + `Cutisakit` + `Izincuti` + `Cuti` saling duplikat |
+
+### Bentuk target
+
+```php
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'create'])->name('login');
+    Route::post('/login', [AuthController::class, 'store'])
+        ->middleware('throttle:5,1')->name('login.store');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
+
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::resource('pegawai', PegawaiController::class)->except('show');
+        Route::resource('departemen', DepartemenController::class)->except('show');
+    });
+});
+```
+
+- **Satu prefix per peran:** `/admin/*` untuk `role:admin`, sisanya untuk pegawai.
+- **Nama route berangkai:** `admin.pegawai.index`, `admin.pegawai.update`, dst.
+- **Jangan menulis 60 route sekaligus.** Ikuti urutan issue kecil: **#18 (login) → #19 (middleware role) → #20 (throttle) → #21 (password)** — tiap langkah mengunci bentuk route berikutnya.
+
+### Keputusan terkait: reset password
+
+**Reset password dilakukan oleh ADMIN, bukan via email.** Alasan: email user hasil ETL masih
+`{nip}@presensi.test` (domain `.test` direserve RFC 2606 → **tidak bisa menerima email**), dan
+admin/HR memang sudah tahu seluruh pegawai. Alur lupa-password via email **baru dipertimbangkan
+belakangan**, setelah ada domain email kerja nyata + SMTP. Rincian di issue **#21**.
+
+---
 
 Ada yang belum tercakup? Tambahkan sebagai issue label `docs` — panduan ini juga harus ikut berkembang.
