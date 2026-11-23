@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * CI tidak menjalankan `npm run build` dan `public/build` ada di .gitignore,
+ * jadi manifest Vite tidak ada. withoutVite() men-stempel directive @vite
+ * supaya halaman referensi tetap bisa diuji tanpa build asset.
+ */
+beforeEach(fn () => $this->withoutVite());
+
 test('serves the component reference page outside production', function () {
     $this->get(route('dev.komponen'))
         ->assertOk()
