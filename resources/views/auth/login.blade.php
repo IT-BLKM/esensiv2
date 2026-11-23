@@ -3,16 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Masuk — {{ config('app.name') }}</title>
+    <title>Masuk — Esensi</title>
     @vite(['resources/css/app.css'])
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900">
     <main class="flex min-h-screen items-center justify-center px-4 py-12">
         <div class="w-full max-w-md">
-            <div class="mb-6 text-center">
-                <p class="text-sm font-medium text-brand-700">{{ config('app.name') }}</p>
-                <h1 class="mt-1 text-2xl font-semibold text-gray-900">Masuk</h1>
-                <p class="mt-1 text-sm text-gray-600">Gunakan email atau NIP yang terdaftar.</p>
+            <div class="mb-6 flex flex-col items-center gap-3 text-center">
+                <img src="{{ asset('images/logo-esensi.jpg') }}" alt="Logo Esensi" class="h-12 w-auto object-contain">
+                <h1 class="text-2xl font-semibold text-gray-900">Masuk</h1>
+                <p class="text-sm text-gray-600">Gunakan email atau NIP yang terdaftar.</p>
             </div>
 
             <x-card>
