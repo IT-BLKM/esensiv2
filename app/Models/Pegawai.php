@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\PegawaiFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Pegawai extends Model
 {
@@ -30,4 +31,9 @@ class Pegawai extends Model
         'foto',
         'no_hp',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }
