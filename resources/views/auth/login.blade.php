@@ -11,7 +11,6 @@
         <div class="w-full max-w-md">
             <div class="mb-6 flex flex-col items-center gap-3 text-center">
                 <img src="{{ asset('images/logo-esensi.jpg') }}" alt="Logo Esensi" class="h-12 w-auto object-contain">
-                <h1 class="text-2xl font-semibold text-gray-900">Masuk</h1>
                 <p class="text-sm text-gray-600">Gunakan email atau NIP yang terdaftar.</p>
             </div>
 
