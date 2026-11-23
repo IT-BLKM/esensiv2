@@ -157,6 +157,7 @@ identik di semua halaman.
 - [ ] Tidak ada utility yang meniru komponen yang sudah ada
 - [ ] Warna teks memakai step **700–950** (atau `gray-*`)
 - [ ] Memakai `route()`, bukan URL literal (lihat `panduan-kolaborasi.md` §13)
+- [ ] **Tidak ada kelas `dark:`** — dark mode tidak didukung (keputusan QA 23 Nov 2026)
 - [ ] Validasi lewat FormRequest, tampilan error lewat `invalid` pada `x-input`
 - [ ] `vendor/bin/pest` + `vendor/bin/pint` hijau
 
@@ -166,6 +167,13 @@ identik di semua halaman.
 
 | Hal | Kondisi sekarang |
 |---|---|
-| **Dark mode** | `welcome.blade.php` masih memakai `dark:`. Perlu dipilih: didukung penuh, atau **dibuang seluruhnya**. Setengah-setengah = sumber inkonsistensi baru. |
 | **Urutan kelas otomatis** | `prettier` + `prettier-plugin-tailwindcss` belum dipasang — butuh **persetujuan ganti dependency**. Tanpa ini, urutan kelas masih tergantung orang. |
 | **Layout admin (#23)** | Beralih dari Tabler ke Tailwind + komponen ini — lihat komentar di issue #23. |
+
+## 9. Keputusan yang sudah disahkan
+
+| Tanggal | Keputusan | Penjagaan |
+|---|---|---|
+| 23 Nov 2026 | **Dark mode dibuang seluruhnya.** Tidak ada kelas `dark:` di view mana pun. | Test `keeps dark mode out of every blade view` di `tests/Feature/DesignTokensTest.php` |
+| 23 Nov 2026 | Stack Tailwind v4 + Blade component; shadcn & Tabler ditolak (§2) | — |
+| 23 Nov 2026 | Reset password oleh admin, bukan email | `panduan-kolaborasi.md` §13 |

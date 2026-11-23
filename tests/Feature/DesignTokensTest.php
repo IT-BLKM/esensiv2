@@ -102,3 +102,23 @@ test('keeps step 500 and lighter out of text usage', function () {
         expect(kontrasWarna($warna, '#ffffff'))->toBeLessThan(3.0);
     }
 });
+
+test('keeps dark mode out of every blade view', function () {
+    // Keputusan QA 23 Nov 2026: dark mode tidak didukung sama sekali.
+    $melanggar = [];
+    $semua = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(resource_path('views'), FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($semua as $file) {
+        if (! $file->isFile() || ! str_ends_with($file->getFilename(), '.blade.php')) {
+            continue;
+        }
+
+        if (str_contains(file_get_contents($file->getPathname()), 'dark:')) {
+            $melanggar[] = str_replace(resource_path('views').'/', '', $file->getPathname());
+        }
+    }
+
+    expect($melanggar)->toBeEmpty();
+});
