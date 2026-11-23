@@ -14,7 +14,8 @@ it('renders the single login form for guests', function () {
     $this->get(route('login'))
         ->assertOk()
         ->assertSee('Email atau NIP')
-        ->assertSee('Masuk');
+        ->assertSee('Masuk')
+        ->assertSee('Tampilkan password');
 });
 
 it('authenticates an admin by email and redirects to the admin panel', function () {
