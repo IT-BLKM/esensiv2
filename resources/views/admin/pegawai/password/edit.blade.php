@@ -18,43 +18,31 @@
                 <x-alert variant="success" class="mb-4">{{ session('status') }}</x-alert>
             @endif
 
+            @if (session('passwordSekali'))
+                <x-alert variant="warning" class="mb-4" title="Simpan password ini sekarang">
+                    <code class="rounded bg-white px-2 py-1 font-mono text-sm">{{ session('passwordSekali') }}</code>
+                    <p class="mt-1">Password acak ini hanya ditampilkan sekali. Sampaikan ke pegawai sekarang; sistem tidak menyimpannya dalam bentuk plaintext.</p>
+                </x-alert>
+            @endif
+
             <x-card>
                 <form method="POST" action="{{ route('admin.pegawai.password.update', $pegawai) }}" class="flex flex-col gap-4">
                     @csrf
 
                     <x-alert variant="info">
-                        Admin yang menetapkan password baru. Password tidak akan ditampilkan atau dikirimkan oleh sistem.
+                        Sistem akan membuat password acak yang kuat dan mengganti password lama. Tidak perlu mengetik password baru.
                     </x-alert>
 
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700">Password baru</label>
-                        <x-input
-                            id="password"
-                            name="password"
-                            type="password"
-                            autocomplete="new-password"
-                            :invalid="$errors->has('password')"
-                            class="mt-1"
-                        />
-                        @error('password')
-                            <p class="mt-1 text-sm text-gray-700">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Konfirmasi password baru</label>
-                        <x-input
-                            id="password_confirmation"
-                            name="password_confirmation"
-                            type="password"
-                            autocomplete="new-password"
-                            class="mt-1"
-                        />
-                    </div>
-
-                    <x-button type="submit">Reset password</x-button>
+                    <x-button type="submit">Buat password baru</x-button>
                 </form>
             </x-card>
+
+            <p class="mt-4 text-center">
+                <a
+                    href="{{ route('admin.pegawai.index') }}"
+                    class="text-sm font-medium text-brand-700 hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                >Kembali ke daftar pegawai</a>
+            </p>
         </div>
     </main>
 </body>
