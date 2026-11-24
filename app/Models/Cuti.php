@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\CutiFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cuti extends Model
 {
@@ -28,4 +29,14 @@ class Cuti extends Model
         'kuota',
         'maks_bawa',
     ];
+
+    public function pengajuan(): HasMany
+    {
+        return $this->hasMany(Pengajuan::class, 'id_cuti');
+    }
+
+    public function saldoCuti(): HasMany
+    {
+        return $this->hasMany(SaldoCuti::class, 'id_cuti');
+    }
 }
