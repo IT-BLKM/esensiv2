@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PasswordController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -12,8 +14,16 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:pegawai')
         ->name('dashboard');
 
+    Route::get('/password', [PasswordController::class, 'edit'])->name('password.edit');
+    Route::post('/password', [PasswordController::class, 'update'])->name('password.update');
+
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::get('/dashboard', fn () => view('admin.dashboard'))->name('dashboard');
+
+        Route::get('/pegawai/{pegawai}/password/edit', [PegawaiPasswordController::class, 'edit'])
+            ->name('pegawai.password.edit');
+        Route::post('/pegawai/{pegawai}/password', [PegawaiPasswordController::class, 'update'])
+            ->name('pegawai.password.update');
 
         /*
          * Tujuh halaman kosong penutup menu sidebar (issue #23). Nama route-nya
