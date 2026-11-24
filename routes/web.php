@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DepartemenController;
+use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
@@ -31,15 +32,19 @@ Route::middleware('auth')->group(function () {
          * bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13): tiap issue
          * fitur mengganti closure ini dengan Route::resource + controller sendiri,
          * nama route `admin.<menu>.index` tidak berubah sehingga tautan sidebar
-         * tidak pernah rusak. Departemen sudah diganti di issue #25.
+         * tidak pernah rusak. Departemen sudah diganti di issue #25, jam kerja di #26.
          */
         Route::get('/pegawai', fn () => view('admin.pegawai'))->name('pegawai.index');
         /*
-         * `Str::singular('departemen')` menghasilkan `departeman`; parameter dipaksa
-         * tetap `departemen` supaya cocok dengan argumen controller dan policy.
+         * Nama parameter dipaksa supaya cocok dengan argumen controller dan policy:
+         * `Str::singular('departemen')` menghasilkan `departeman`, dan resource
+         * `jam-kerja` menghasilkan wildcard `jam_kerja` bila dibiarkan.
          */
         Route::resource('departemen', DepartemenController::class)
             ->parameters(['departemen' => 'departemen'])
+            ->except('show');
+        Route::resource('jam-kerja', JamKerjaController::class)
+            ->parameters(['jam-kerja' => 'jamKerja'])
             ->except('show');
         Route::get('/cuti', fn () => view('admin.cuti'))->name('cuti.index');
         Route::get('/monitoring', fn () => view('admin.monitoring'))->name('monitoring.index');
