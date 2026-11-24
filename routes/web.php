@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
+use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
@@ -50,14 +51,16 @@ Route::middleware('auth')->group(function () {
             ->name('pegawai.password.update');
 
         /*
-         * Halaman kosong penutup menu sidebar (issue #23). Nama route-nya sudah
+         * Route penutup menu sidebar (issue #23). Nama route-nya sudah
          * bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13): tiap issue
          * fitur mengganti closure ini dengan Route::resource + controller sendiri,
          * nama route `admin.<menu>.index` tidak berubah sehingga tautan sidebar
          * tidak pernah rusak. Departemen sudah diganti di issue #25, jam kerja di #26,
-         * konfigurasi jam kerja per pegawai di #29.
+         * konfigurasi jam kerja per pegawai di #29, pegawai di #28.
          */
-        Route::get('/pegawai', fn () => view('admin.pegawai'))->name('pegawai.index');
+        Route::resource('pegawai', PegawaiController::class)
+            ->parameters(['pegawai' => 'pegawai'])
+            ->except('show');
         /*
          * Nama parameter dipaksa supaya cocok dengan argumen controller dan policy:
          * `Str::singular('departemen')` menghasilkan `departeman`, dan resource

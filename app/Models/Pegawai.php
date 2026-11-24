@@ -38,6 +38,11 @@ class Pegawai extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function departemen(): BelongsTo
+    {
+        return $this->belongsTo(Departemen::class, 'id_dept');
+    }
+
     public function pengajuan(): HasMany
     {
         return $this->hasMany(Pengajuan::class, 'id_pegawai');
