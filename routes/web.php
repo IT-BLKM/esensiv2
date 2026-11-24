@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
@@ -26,14 +27,20 @@ Route::middleware('auth')->group(function () {
             ->name('pegawai.password.update');
 
         /*
-         * Tujuh halaman kosong penutup menu sidebar (issue #23). Nama route-nya
-         * sudah bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13):
-         * tiap issue fitur mengganti closure ini dengan Route::resource +
-         * controller sendiri, nama route `admin.<menu>.index` tidak berubah
-         * sehingga tautan sidebar tidak pernah rusak.
+         * Halaman kosong penutup menu sidebar (issue #23). Nama route-nya sudah
+         * bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13): tiap issue
+         * fitur mengganti closure ini dengan Route::resource + controller sendiri,
+         * nama route `admin.<menu>.index` tidak berubah sehingga tautan sidebar
+         * tidak pernah rusak. Departemen sudah diganti di issue #25.
          */
         Route::get('/pegawai', fn () => view('admin.pegawai'))->name('pegawai.index');
-        Route::get('/departemen', fn () => view('admin.departemen'))->name('departemen.index');
+        /*
+         * `Str::singular('departemen')` menghasilkan `departeman`; parameter dipaksa
+         * tetap `departemen` supaya cocok dengan argumen controller dan policy.
+         */
+        Route::resource('departemen', DepartemenController::class)
+            ->parameters(['departemen' => 'departemen'])
+            ->except('show');
         Route::get('/cuti', fn () => view('admin.cuti'))->name('cuti.index');
         Route::get('/monitoring', fn () => view('admin.monitoring'))->name('monitoring.index');
         Route::get('/pengajuan', fn () => view('admin.pengajuan'))->name('pengajuan.index');
