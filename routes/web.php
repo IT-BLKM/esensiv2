@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\JamKerjaController;
+use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
@@ -53,7 +54,8 @@ Route::middleware('auth')->group(function () {
          * bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13): tiap issue
          * fitur mengganti closure ini dengan Route::resource + controller sendiri,
          * nama route `admin.<menu>.index` tidak berubah sehingga tautan sidebar
-         * tidak pernah rusak. Departemen sudah diganti di issue #25, jam kerja di #26.
+         * tidak pernah rusak. Departemen sudah diganti di issue #25, jam kerja di #26,
+         * konfigurasi jam kerja per pegawai di #29.
          */
         Route::get('/pegawai', fn () => view('admin.pegawai'))->name('pegawai.index');
         /*
@@ -71,7 +73,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/monitoring', fn () => view('admin.monitoring'))->name('monitoring.index');
         Route::get('/pengajuan', fn () => view('admin.pengajuan'))->name('pengajuan.index');
         Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan.index');
-        Route::get('/konfigurasi', fn () => view('admin.konfigurasi'))->name('konfigurasi.index');
+        Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
+        Route::get('/konfigurasi/{pegawai}/edit', [KonfigurasiJamKerjaController::class, 'edit'])
+            ->name('konfigurasi.edit');
+        Route::put('/konfigurasi/{pegawai}', [KonfigurasiJamKerjaController::class, 'update'])
+            ->name('konfigurasi.update');
     });
 });
 

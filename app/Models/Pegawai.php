@@ -47,4 +47,9 @@ class Pegawai extends Model
     {
         return $this->hasMany(Presensi::class, 'id_pegawai');
     }
+
+    public function konfigurasiJamKerja(): HasMany
+    {
+        return $this->hasMany(KonfigurasiJamKerja::class, 'id_pegawai');
+    }
 }
