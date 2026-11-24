@@ -6,7 +6,7 @@ Aturan kerja tim (branch, commit, pull request, aturan main) ada di
 
 ## Pola CRUD (ditetapkan di issue #25 — Departemen)
 
-Departemen adalah contoh pertama. CRUD berikutnya menyalin bentuknya, bukan mengarang gaya baru.
+Departemen (#25) dan Jam Kerja (#26) adalah contohnya. CRUD berikutnya menyalin bentuknya, bukan mengarang gaya baru.
 
 | Lapisan | Lokasi | Aturan |
 |---|---|---|
@@ -26,9 +26,15 @@ FormRequest → Action → redirect()->route('admin.<menu>.index')->with('succes
 Halaman `index` menerima kata kunci `?q=` lalu menyerahkannya ke Action `Cari…`; Action itulah yang
 menentukan filter dan urutan, bukan view atau controller.
 
-**Jaga data.** FK `pegawai.id_dept` memakai `cascadeOnDelete`, jadi `DeleteDepartemenAction`
-menolak menghapus departemen yang masih dipakai pegawai dan controller mengirim flash `error`.
+**Jaga data.** Cek FK sebelum menghapus. `DeleteDepartemenAction` menolak departemen yang masih
+dipakai pegawai (`cascadeOnDelete`); `DeleteJamKerjaAction` menolak jam kerja yang masih dipakai
+konfigurasi (`cascadeOnDelete`) atau presensi (`nullOnDelete`). Aksi yang ditolak mengirim flash `error`.
+
+**Validasi lintas field** tetap di FormRequest: `after_or_equal` berantai dipakai Jam Kerja untuk
+`awal_masuk ≤ jam_masuk ≤ akhir_masuk ≤ jam_pulang`. Saat update, `kode` sendiri tidak boleh dianggap
+duplikat — selalu pakai `Rule::unique(...)->ignore($model->id)`.
 
 **Test minimal tiap CRUD:** create sukses (assert baris tersimpan + flash), validasi error (assert
 session errors), akses guest/pegawai ditolak, dan satu kasus gagal khusus (misal hapus data yang
-masih dipakai). Contoh lengkap: `tests/Feature/Admin/DepartemenCrudTest.php`.
+masih dipakai). Contoh lengkap: `tests/Feature/Admin/DepartemenCrudTest.php` dan
+`tests/Feature/Admin/JamKerjaCrudTest.php`.

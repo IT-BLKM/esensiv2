@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\JamKerjaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class JamKerja extends Model
 {
@@ -29,4 +30,20 @@ class JamKerja extends Model
         'akhir_masuk',
         'jam_pulang',
     ];
+
+    /**
+     * Jadwal pegawai yang memakai shift ini.
+     */
+    public function konfigurasiJamKerja(): HasMany
+    {
+        return $this->hasMany(KonfigurasiJamKerja::class, 'id_jam_kerja');
+    }
+
+    /**
+     * Jejak presensi yang merekam shift ini.
+     */
+    public function presensi(): HasMany
+    {
+        return $this->hasMany(Presensi::class, 'id_jam_kerja');
+    }
 }

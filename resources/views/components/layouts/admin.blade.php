@@ -15,6 +15,7 @@
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'route' => 'admin.dashboard', 'pola' => 'admin.dashboard'],
         ['label' => 'Pegawai', 'icon' => 'pegawai', 'route' => 'admin.pegawai.index', 'pola' => 'admin.pegawai.*'],
         ['label' => 'Departemen', 'icon' => 'departemen', 'route' => 'admin.departemen.index', 'pola' => 'admin.departemen.*'],
+        ['label' => 'Jam Kerja', 'icon' => 'jam', 'route' => 'admin.jam-kerja.index', 'pola' => 'admin.jam-kerja.*'],
         ['label' => 'Cuti', 'icon' => 'cuti', 'route' => 'admin.cuti.index', 'pola' => 'admin.cuti.*'],
         ['label' => 'Monitoring', 'icon' => 'monitoring', 'route' => 'admin.monitoring.index', 'pola' => 'admin.monitoring.*'],
         ['label' => 'Pengajuan', 'icon' => 'pengajuan', 'route' => 'admin.pengajuan.index', 'pola' => 'admin.pengajuan.*'],
