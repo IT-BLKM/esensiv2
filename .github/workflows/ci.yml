@@ -111,6 +111,23 @@ jobs:
             exit 1
           fi
 
+      # Aset di-build SEBELUM test supaya kondisi CI sama dengan lokal
+      # (public/build/manifest.json memang ada di mesin dev). Tanpa langkah ini,
+      # view ber-@vite gagal dengan "Vite manifest not found" di CI padahal lulus
+      # lokal — public/build ada di .gitignore sehingga tidak ikut ter-checkout.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+
+      # npm ci memakai package-lock.json -> versi dependency identik dengan mesin dev.
+      - name: Install dependency Node
+        run: npm ci
+
+      - name: Build aset (Vite)
+        run: npm run build
+
       # Test dengan RefreshDatabase otomatis migrate - tidak perlu langkah migrate manual.
       - name: Jalankan test
         run: vendor/bin/pest
