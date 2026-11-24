@@ -5,6 +5,13 @@ use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
 
+/*
+ * /admin/dashboard kini melewatinya layout yang ber-@vite. withoutVite()
+ * membuat test tidak bergantung pada public/build — sama seperti LoginTest
+ * dan LayoutTest (lihat issue #3).
+ */
+beforeEach(fn () => $this->withoutVite());
+
 it('redirects guests to the login page', function (string $path) {
     $this->get($path)->assertRedirect('/login');
 })->with([

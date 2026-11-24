@@ -104,6 +104,8 @@ Semua di `resources/views/components/`. Pakai komponen, jangan menyusun utility 
 | `x-alert` | `<x-alert variant="danger" title="Gagal">…</x-alert>` | Pesan sukses/info/peringatan/error |
 | `x-input` | `<x-input name="nip" invalid />` | `invalid` mengaktifkan gaya error |
 | `x-table` | lihat §5 | Bersama `x-table.th` / `x-table.td` |
+| `x-icon` | `<x-icon name="dashboard" />` | `dashboard` · `pegawai` · `departemen` · `cuti` · `monitoring` · `pengajuan` · `laporan` · `konfigurasi` · `user` · `menu` · `logout`; ukuran `sm` · `md` · `lg` |
+| `x-layouts.admin` | `<x-layouts.admin title="Pegawai">…</x-layouts.admin>` | Hanya untuk halaman admin — lihat §4.1 |
 
 ### Menambah komponen baru
 
@@ -112,6 +114,29 @@ Semua di `resources/views/components/`. Pakai komponen, jangan menyusun utility 
 3. Daftarkan di halaman `/dev/komponen` beserta seluruh varian.
 4. Tulis di tabel §4 dokumen ini.
 5. Buka PR — reviewer memastikan tidak ada hex literal dan tidak ada utility yang meniru komponen lain.
+
+### 4.1 Layout halaman admin
+
+Seluruh halaman admin dibungkus `<x-layouts.admin title="...">`
+(`resources/views/components/layouts/admin.blade.php`) yang menyediakan **header,
+sidebar menu, pesan sesi, dan footer**. Jangan menulis `<nav>`/`<header>` sendiri per halaman.
+
+```blade
+<x-layouts.admin title="Pegawai">
+    <h1 class="text-xl font-semibold text-gray-900">Pegawai</h1>
+    {{-- isi halaman --}}
+</x-layouts.admin>
+```
+
+- **Menu sidebar didefinisikan sekali**, di array `$menu` dalam layout. Menambah menu =
+  menambah **satu baris** di situ **dan** satu route dengan nama tersebut — tidak ada
+  tautan yang bisa menyalah.
+- Menu aktif ditandai otomatis dengan `aria-current="page"` lewat pola `admin.<menu>.*`,
+  jadi ikut benar saat route `admin.pegawai.create` dan kawan-kawan menyusul.
+- Pesan sesi `success`, `warning`, dan `error` otomatis tampil di atas konten
+  (dipakai `RoleMiddleware` untuk peringatan "halaman ini hanya untuk akun …").
+- Halaman yang belum diisi fiturnya ada di `resources/views/admin/*.blade.php` — tiap
+  halaman menyebut issue yang akan mengisinya.
 
 ---
 
@@ -155,6 +180,7 @@ identik di semua halaman.
 
 - [ ] Tidak ada hex literal (`#xxxxxx`) di `.blade.php`
 - [ ] Tidak ada utility yang meniru komponen yang sudah ada
+- [ ] Halaman admin dibungkus `<x-layouts.admin>` (§4.1), menu sidebar tidak ditulis ulang
 - [ ] Warna teks memakai step **700–950** (atau `gray-*`)
 - [ ] Memakai `route()`, bukan URL literal (lihat `panduan-kolaborasi.md` §13)
 - [ ] **Tidak ada kelas `dark:`** — dark mode tidak didukung (keputusan QA 23 Nov 2026)
