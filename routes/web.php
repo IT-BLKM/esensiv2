@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CutiController;
 use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
@@ -56,7 +57,8 @@ Route::middleware('auth')->group(function () {
          * fitur mengganti closure ini dengan Route::resource + controller sendiri,
          * nama route `admin.<menu>.index` tidak berubah sehingga tautan sidebar
          * tidak pernah rusak. Departemen sudah diganti di issue #25, jam kerja di #26,
-         * konfigurasi jam kerja per pegawai di #29, pegawai di #28.
+         * konfigurasi jam kerja per pegawai di #29, jenis & aturan cuti di #27,
+         * pegawai di #28.
          */
         Route::resource('pegawai', PegawaiController::class)
             ->parameters(['pegawai' => 'pegawai'])
@@ -72,7 +74,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('jam-kerja', JamKerjaController::class)
             ->parameters(['jam-kerja' => 'jamKerja'])
             ->except('show');
-        Route::get('/cuti', fn () => view('admin.cuti'))->name('cuti.index');
+        Route::resource('cuti', CutiController::class)
+            ->parameters(['cuti' => 'cuti'])
+            ->except('show');
         Route::get('/monitoring', fn () => view('admin.monitoring'))->name('monitoring.index');
         Route::get('/pengajuan', fn () => view('admin.pengajuan'))->name('pengajuan.index');
         Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan.index');
