@@ -6,6 +6,7 @@ use Database\Factories\PegawaiFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pegawai extends Model
 {
@@ -35,5 +36,15 @@ class Pegawai extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function pengajuan(): HasMany
+    {
+        return $this->hasMany(Pengajuan::class, 'id_pegawai');
+    }
+
+    public function presensi(): HasMany
+    {
+        return $this->hasMany(Presensi::class, 'id_pegawai');
     }
 }

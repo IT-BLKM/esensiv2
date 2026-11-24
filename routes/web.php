@@ -5,6 +5,9 @@ use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\Pegawai\LaporanController;
+use App\Http\Controllers\Pegawai\PengajuanController;
+use App\Http\Controllers\Pegawai\PresensiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -18,6 +21,24 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/password', [PasswordController::class, 'edit'])->name('password.edit');
     Route::post('/password', [PasswordController::class, 'update'])->name('password.update');
+
+    /*
+     * Akses data pengajuan/presensi/laporan. Tidak pakai middleware role:
+     * admin boleh semua, pegawai dibatasi Policy ke data miliknya (anti-IDOR).
+     * Route memakai binding model, bukan `{nip}`/`{kode}` seperti app lama.
+     */
+    Route::prefix('pegawai')->name('pegawai.')->group(function () {
+        Route::get('/pengajuan', [PengajuanController::class, 'index'])->name('pengajuan.index');
+        Route::get('/pengajuan/{pengajuan}/edit', [PengajuanController::class, 'edit'])->name('pengajuan.edit');
+        Route::get('/pengajuan/{pengajuan}', [PengajuanController::class, 'show'])->name('pengajuan.show');
+        Route::put('/pengajuan/{pengajuan}', [PengajuanController::class, 'update'])->name('pengajuan.update');
+        Route::delete('/pengajuan/{pengajuan}', [PengajuanController::class, 'destroy'])->name('pengajuan.destroy');
+
+        Route::get('/presensi', [PresensiController::class, 'index'])->name('presensi.index');
+        Route::get('/presensi/{presensi}', [PresensiController::class, 'show'])->name('presensi.show');
+
+        Route::get('/laporan/{pegawai}', [LaporanController::class, 'show'])->name('laporan.show');
+    });
 
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::get('/dashboard', fn () => view('admin.dashboard'))->name('dashboard');
