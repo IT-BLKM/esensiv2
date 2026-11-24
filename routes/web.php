@@ -43,12 +43,14 @@ Route::middleware('auth')->group(function () {
 });
 
 /*
- * Satu guard `web`, satu halaman login. Route admin/pegawai menyusul di #19;
- * throttle login menyusul di #20 (docs/panduan-kolaborasi.md §13).
+ * Satu guard `web`, satu halaman login. Throttle 5 percobaan/menit mengunci
+ * route login sesuai docs/panduan-kolaborasi.md §13 aturan 7.
  */
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
-    Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+    Route::post('/login', [AuthController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('login.store');
 });
 
 Route::middleware('auth')->group(function () {

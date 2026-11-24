@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -26,6 +27,12 @@ class AuthController extends Controller
         );
 
         if ($credentials === null || ! Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
+            Log::warning('Percobaan login gagal.', [
+                'identitas' => $request->validated('identitas'),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
             throw ValidationException::withMessages([
                 'identitas' => 'Email/NIP atau password salah.',
             ]);
@@ -35,6 +42,11 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::guard('web')->user();
+
+        Log::info('Login berhasil.', [
+            'user_id' => $user->id,
+            'ip' => $request->ip(),
+        ]);
 
         return redirect($this->redirectPathForRole($user->role));
     }
