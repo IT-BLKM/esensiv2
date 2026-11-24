@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-red.svg" width="120" alt="Laravel">
+  <img src="https://github.com/IT-BLKM/esensiv2/blob/main/public/images/logo-esensi.jpg" width="120" alt="Logo Esensi">
 </p>
 
 <h1 align="center">esensiv2 — Sistem Presensi (GPS + Foto + Wajah)</h1>
