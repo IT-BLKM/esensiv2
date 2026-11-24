@@ -13,7 +13,22 @@ Route::middleware('auth')->group(function () {
         ->name('dashboard');
 
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
-        Route::get('/dashboard', fn () => 'Dashboard admin')->name('dashboard');
+        Route::get('/dashboard', fn () => view('admin.dashboard'))->name('dashboard');
+
+        /*
+         * Tujuh halaman kosong penutup menu sidebar (issue #23). Nama route-nya
+         * sudah bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13):
+         * tiap issue fitur mengganti closure ini dengan Route::resource +
+         * controller sendiri, nama route `admin.<menu>.index` tidak berubah
+         * sehingga tautan sidebar tidak pernah rusak.
+         */
+        Route::get('/pegawai', fn () => view('admin.pegawai'))->name('pegawai.index');
+        Route::get('/departemen', fn () => view('admin.departemen'))->name('departemen.index');
+        Route::get('/cuti', fn () => view('admin.cuti'))->name('cuti.index');
+        Route::get('/monitoring', fn () => view('admin.monitoring'))->name('monitoring.index');
+        Route::get('/pengajuan', fn () => view('admin.pengajuan'))->name('pengajuan.index');
+        Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan.index');
+        Route::get('/konfigurasi', fn () => view('admin.konfigurasi'))->name('konfigurasi.index');
     });
 });
 

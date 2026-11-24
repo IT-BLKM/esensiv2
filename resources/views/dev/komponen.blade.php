@@ -183,6 +183,42 @@
             </x-table>
         </section>
 
+        {{-- Ikon --}}
+        <section class="flex flex-col gap-4">
+            <div>
+                <h2 class="text-lg font-semibold">7. Ikon</h2>
+                <p class="text-sm text-gray-600">
+                    Ikon stroke milik sendiri lewat <code class="rounded bg-gray-200 px-1">&lt;x-icon name="..."&gt;</code>
+                    — tidak ada dependensi ikon eksternal dan tidak ada SVG tempel per halaman.
+                    Nama baru ditambahkan di <code class="rounded bg-gray-200 px-1">resources/views/components/icon.blade.php</code>
+                    sekaligus di daftar ini.
+                </p>
+            </div>
+
+            <x-card>
+                <div class="flex flex-wrap gap-x-6 gap-y-4 text-gray-700">
+                    @foreach (['dashboard', 'pegawai', 'departemen', 'cuti', 'monitoring', 'pengajuan', 'laporan', 'konfigurasi', 'user', 'menu', 'logout'] as $nama)
+                        <div class="flex w-24 flex-col items-center gap-1.5">
+                            <x-icon :name="$nama" size="lg" />
+                            <span class="text-center text-xs text-gray-600">{{ $nama }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </x-card>
+        </section>
+
+        {{-- Layout --}}
+        <section class="flex flex-col gap-4">
+            <div>
+                <h2 class="text-lg font-semibold">8. Layout halaman</h2>
+                <p class="text-sm text-gray-600">
+                    Seluruh halaman admin memakai <code class="rounded bg-gray-200 px-1">&lt;x-layouts.admin title="..."&gt;</code>
+                    (header, sidebar menu, pesan sesi, footer). Lihat langsung dengan masuk sebagai admin ke
+                    <a class="font-medium text-brand-700 underline underline-offset-4" href="{{ route('admin.dashboard') }}">{{ route('admin.dashboard') }}</a>.
+                </p>
+            </div>
+        </section>
+
         <footer class="border-t border-gray-200 pt-4 text-xs text-gray-500">
             Halaman referensi internal — tidak diekspos pada produksi.
         </footer>
