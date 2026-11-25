@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Http\Controllers\Pegawai;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Pengajuan;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;

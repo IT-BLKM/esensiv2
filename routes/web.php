@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
 use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
+use App\Http\Controllers\Admin\PengajuanController as PengajuanAdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\Pegawai\DashboardController;
@@ -15,10 +16,10 @@ use App\Http\Controllers\Pegawai\PengajuanController;
 use App\Http\Controllers\Pegawai\PengajuanDaftarController;
 use App\Http\Controllers\Pegawai\PengajuanDetailController;
 use App\Http\Controllers\Pegawai\PengajuanFormController;
-use App\Http\Controllers\Pegawai\PengajuanLampiranController;
 use App\Http\Controllers\Pegawai\PresensiController;
 use App\Http\Controllers\Pegawai\PresensiHalamanController;
 use App\Http\Controllers\Pegawai\StorePresensiController;
+use App\Http\Controllers\PengajuanLampiranController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -121,7 +122,21 @@ Route::middleware('auth')->group(function () {
             ->parameters(['cuti' => 'cuti'])
             ->except('show');
         Route::get('/monitoring', fn () => view('admin.monitoring'))->name('monitoring.index');
-        Route::get('/pengajuan', fn () => view('admin.pengajuan'))->name('pengajuan.index');
+
+        /*
+         * Panel pengajuan (issue #39): daftar/filter, detail, approve/reject,
+         * dan unduh lampiran privat. Nama index dipertahankan untuk sidebar.
+         */
+        Route::get('/pengajuan', [PengajuanAdminController::class, 'index'])->name('pengajuan.index');
+        Route::get('/pengajuan/{pengajuan}', [PengajuanAdminController::class, 'show'])
+            ->name('pengajuan.show');
+        Route::get('/pengajuan/{pengajuan}/lampiran', PengajuanLampiranController::class)
+            ->name('pengajuan.lampiran');
+        Route::post('/pengajuan/{pengajuan}/approve', [PengajuanAdminController::class, 'approve'])
+            ->name('pengajuan.approve');
+        Route::post('/pengajuan/{pengajuan}/reject', [PengajuanAdminController::class, 'reject'])
+            ->name('pengajuan.reject');
+
         Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan.index');
         Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
         Route::get('/konfigurasi/{pegawai}/edit', [KonfigurasiJamKerjaController::class, 'edit'])
