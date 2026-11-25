@@ -81,3 +81,20 @@ test('allows the same date for different pegawai', function () {
 
     $this->assertDatabaseCount('presensi', 2);
 });
+
+test('factory states cover cuti, sakit, dl, missing check-in, and missing checkout', function () {
+    $cuti = Presensi::factory()->cuti()->create(['tgl_presensi' => '2026-11-01']);
+    $sakit = Presensi::factory()->sakit()->create(['tgl_presensi' => '2026-11-02']);
+    $dl = Presensi::factory()->dl()->create(['tgl_presensi' => '2026-11-03']);
+    $tanpaMasuk = Presensi::factory()->tanpaJamMasuk()->create(['tgl_presensi' => '2026-11-04']);
+    $tanpaKeluar = Presensi::factory()->tanpaJamKeluar()->create(['tgl_presensi' => '2026-11-05']);
+
+    expect($cuti->status)->toBe('cuti')
+        ->and($cuti->jam_masuk)->toBeNull()
+        ->and($sakit->status)->toBe('sakit')
+        ->and($sakit->pengajuan?->jenis)->toBe('sakit')
+        ->and($dl->status)->toBe('dl')
+        ->and($dl->pengajuan?->jenis)->toBe('dl')
+        ->and($tanpaMasuk->jam_masuk)->toBeNull()
+        ->and($tanpaKeluar->jam_keluar)->toBeNull();
+});

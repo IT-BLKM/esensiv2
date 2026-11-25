@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Database\Factories\PenggantianKeterlambatanFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +15,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PenggantianKeterlambatan extends Model
 {
+    /** @use HasFactory<PenggantianKeterlambatanFactory> */
+    use HasFactory;
+
     protected $table = 'penggantian_keterlambatan';
 
     /**
