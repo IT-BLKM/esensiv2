@@ -3,6 +3,7 @@
 use App\Models\Cuti;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
+use App\Models\SaldoCuti;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -224,6 +225,27 @@ it('shows the haji checkbox only when the selected cuti is C04', function () {
     expect($cekBlok($default))->toBe(['tersembunyi' => true, 'disabled' => true])
         ->and($cekBlok($denganC04))->toBe(['tersembunyi' => false, 'disabled' => false])
         ->and($cekBlok($denganC01))->toBe(['tersembunyi' => true, 'disabled' => true]);
+});
+
+it('shows 24 days including savings on the form', function () {
+    SaldoCuti::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cuti->id,
+        'tahun_sumber' => 2024,
+        'saldo' => 6,
+    ]);
+    SaldoCuti::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cuti->id,
+        'tahun_sumber' => 2025,
+        'saldo' => 6,
+    ]);
+
+    $this->actingAs($this->user)->get(route('pengajuan.create'))
+        ->assertOk()
+        ->assertSee('Total tersedia termasuk tabungan: 24 hari')
+        ->assertSee('maksimal terbawa ke 2027:')
+        ->assertSee('6 hari');
 });
 
 it('redirects a new cuti tahunan to the pending one instead of creating a duplicate', function () {

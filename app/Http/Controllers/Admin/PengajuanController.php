@@ -68,7 +68,7 @@ class PengajuanController extends Controller
             ? null
             : $daftarPegawai->firstWhere('id', $idPegawai);
 
-        $cuti = Cuti::query()->orderBy('kode')->get(['id', 'kode', 'nama', 'kuota', 'maks_hari']);
+        $cuti = Cuti::query()->orderBy('kode')->get(['id', 'kode', 'nama', 'kuota', 'maks_hari', 'maks_bawa']);
         $tahun = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'))->year;
         $sisa = [];
 
