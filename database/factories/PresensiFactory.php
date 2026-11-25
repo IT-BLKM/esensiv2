@@ -47,6 +47,63 @@ class PresensiFactory extends Factory
         ]);
     }
 
+    public function hadir(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => 'hadir',
+            'jam_masuk' => '08:00:00',
+            'jam_keluar' => '17:00:00',
+        ]);
+    }
+
+    public function cuti(): static
+    {
+        return $this->statusTanpaAbsen('cuti');
+    }
+
+    public function sakit(): static
+    {
+        return $this->statusTanpaAbsen('sakit', Pengajuan::factory()->sakit());
+    }
+
+    public function dl(): static
+    {
+        return $this->statusTanpaAbsen('dl', Pengajuan::factory()->dl());
+    }
+
+    public function tanpaJamMasuk(): static
+    {
+        return $this->state(fn (): array => [
+            'jam_masuk' => null,
+            'foto_masuk' => null,
+            'koordinat_masuk' => null,
+        ]);
+    }
+
+    public function tanpaJamKeluar(): static
+    {
+        return $this->state(fn (): array => [
+            'jam_keluar' => null,
+            'foto_keluar' => null,
+            'koordinat_keluar' => null,
+        ]);
+    }
+
+    private function statusTanpaAbsen(string $status, Factory|int|null $pengajuan = null): static
+    {
+        return $this->state(fn (): array => [
+            'id_jam_kerja' => null,
+            'id_pengajuan' => $pengajuan ?? $this->pengajuanId(),
+            'status' => $status,
+            'jam_masuk' => null,
+            'jam_keluar' => null,
+            'foto_masuk' => null,
+            'foto_keluar' => null,
+            'koordinat_masuk' => null,
+            'koordinat_keluar' => null,
+        ]);
+    }
+
     /**
      * Parent dibuat otomatis begitu tabelnya tersedia (PR #12 / #57 / #61).
      */

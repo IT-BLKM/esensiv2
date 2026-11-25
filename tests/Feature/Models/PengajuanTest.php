@@ -50,3 +50,24 @@ test('allows sakit and dl without id_cuti', function () {
 
     $this->assertDatabaseCount('pengajuan', 2);
 });
+
+test('factory states cover pending, approved, rejected, sakit, and dl', function () {
+    $admin = User::factory()->admin()->create();
+
+    $pending = Pengajuan::factory()->pending()->create();
+    $approved = Pengajuan::factory()->approvedBy($admin)->create();
+    $rejected = Pengajuan::factory()->rejectedBy($admin, 'Tidak sesuai')->create();
+    $sakit = Pengajuan::factory()->sakit()->create();
+    $dl = Pengajuan::factory()->dl('setengah')->create();
+
+    expect($pending->status)->toBe('pending')
+        ->and($approved->status)->toBe('approved')
+        ->and($approved->disetujui_oleh)->toBe($admin->id)
+        ->and($rejected->status)->toBe('rejected')
+        ->and($rejected->catatan)->toBe('Tidak sesuai')
+        ->and($sakit->jenis)->toBe('sakit')
+        ->and($sakit->id_cuti)->toBeNull()
+        ->and($dl->jenis)->toBe('dl')
+        ->and($dl->mode_dl)->toBe('setengah')
+        ->and($dl->id_cuti)->toBeNull();
+});

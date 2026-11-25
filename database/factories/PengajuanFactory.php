@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Cuti;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
@@ -36,6 +37,54 @@ class PengajuanFactory extends Factory
             'disetujui_pada' => null,
             'catatan' => null,
         ];
+    }
+
+    public function pending(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => 'pending',
+            'disetujui_oleh' => null,
+            'disetujui_pada' => null,
+            'catatan' => null,
+        ]);
+    }
+
+    public function approvedBy(User $admin): static
+    {
+        return $this->state(fn (): array => [
+            'status' => 'approved',
+            'disetujui_oleh' => $admin->id,
+            'disetujui_pada' => now(),
+            'catatan' => null,
+        ]);
+    }
+
+    public function rejectedBy(User $admin, string $catatan = 'Ditolak.'): static
+    {
+        return $this->state(fn (): array => [
+            'status' => 'rejected',
+            'disetujui_oleh' => $admin->id,
+            'disetujui_pada' => now(),
+            'catatan' => $catatan,
+        ]);
+    }
+
+    public function sakit(): static
+    {
+        return $this->state(fn (): array => [
+            'id_cuti' => null,
+            'jenis' => 'sakit',
+            'mode_dl' => null,
+        ]);
+    }
+
+    public function dl(string $mode = 'full'): static
+    {
+        return $this->state(fn (): array => [
+            'id_cuti' => null,
+            'jenis' => 'dl',
+            'mode_dl' => $mode,
+        ]);
     }
 
     /**
