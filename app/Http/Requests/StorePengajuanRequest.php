@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Actions\Cuti\HitungSisaCutiAction;
 use App\Actions\Pengajuan\HitungHariKerjaAction;
 use App\Models\Cuti;
+use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\Presensi;
 use Carbon\CarbonImmutable;
@@ -66,7 +67,7 @@ class StorePengajuanRequest extends FormRequest
                 'file',
                 'mimes:jpg,jpeg,png,pdf',
                 'max:2048',
-                Rule::requiredIf(fn (): bool => $this->lampiranDibutuhkan()),
+                Rule::requiredIf(fn (): bool => $this->lampiranDibutuhkan() && ! $this->punyaLampiranTersimpan()),
             ],
             'id_pegawai' => ['prohibited'],
             'status' => ['prohibited'],
@@ -99,7 +100,7 @@ class StorePengajuanRequest extends FormRequest
             'keterangan.string' => 'Keterangan harus berupa teks.',
             'keterangan.max' => 'Keterangan maksimal 255 karakter.',
             'alasan_haji.boolean' => 'Penanda alasan haji tidak valid.',
-            'lampiran.required' => 'Lampiran wajib diunggah untuk sakit dan cuti alasan penting.',
+            'lampiran.required' => 'Lampiran wajib diunggah untuk sakit lebih dari 3 hari kerja dan cuti alasan penting.',
             'lampiran.file' => 'Lampiran harus berupa berkas.',
             'lampiran.mimes' => 'Lampiran harus berformat JPG, JPEG, PNG, atau PDF.',
             'lampiran.max' => 'Ukuran lampiran maksimal 2 MB.',
@@ -123,7 +124,7 @@ class StorePengajuanRequest extends FormRequest
                 return;
             }
 
-            $pegawai = $this->user()?->pegawai;
+            $pegawai = $this->pegawaiPengajuan();
 
             if ($pegawai === null) {
                 return;
@@ -218,10 +219,15 @@ class StorePengajuanRequest extends FormRequest
         });
     }
 
+    /**
+     * Lampiran sakit hanya wajib bila rentangnya lebih dari tiga hari kerja.
+     * Hari kerja dihitung dengan aturan yang sama seperti approval (#39),
+     * sehingga Sabtu/Minggu dan hari tanpa shift tidak menambah batas.
+     */
     private function lampiranDibutuhkan(): bool
     {
         if ($this->input('jenis') === 'sakit') {
-            return true;
+            return $this->jumlahHariKerjaSakit() > 3;
         }
 
         if ($this->input('jenis') !== 'cuti') {
@@ -235,5 +241,49 @@ class StorePengajuanRequest extends FormRequest
         }
 
         return Cuti::query()->whereKey($idCuti)->value('kode') === Cuti::KODE_ALASAN_PENTING;
+    }
+
+    private function jumlahHariKerjaSakit(): int
+    {
+        $pegawai = $this->pegawaiPengajuan();
+        $mulai = $this->input('tanggal_mulai');
+        $selesai = $this->input('tanggal_berakhir');
+
+        if ($pegawai === null || ! is_string($mulai) || ! is_string($selesai)) {
+            return 0;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $mulai) !== 1
+            || preg_match('/^\d{4}-\d{2}-\d{2}$/', $selesai) !== 1) {
+            return 0;
+        }
+
+        return ($this->hitungHariKerja)(
+            $pegawai,
+            CarbonImmutable::parse($mulai)->startOfDay(),
+            CarbonImmutable::parse($selesai)->startOfDay(),
+        );
+    }
+
+    /**
+     * Pegawai yang menjadi subjek pengajuan. Form pegawai memakai pemilik akun;
+     * form admin (issue #104) mengoverride untuk pegawai yang dipilih.
+     */
+    protected function pegawaiPengajuan(): ?Pegawai
+    {
+        return $this->user()?->pegawai;
+    }
+
+    /**
+     * Saat mengedit pengajuan pending, lampiran lama dianggap memenuhi
+     * kewajiban sampai pegawai mengunggah pengganti.
+     */
+    private function punyaLampiranTersimpan(): bool
+    {
+        $pengajuan = $this->route('pengajuan');
+
+        return $pengajuan instanceof Pengajuan
+            && is_string($pengajuan->lampiran)
+            && $pengajuan->lampiran !== '';
     }
 }

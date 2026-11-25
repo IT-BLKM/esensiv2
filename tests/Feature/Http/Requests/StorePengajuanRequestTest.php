@@ -121,10 +121,34 @@ test('accepts sakit without id_cuti when the lampiran is present', function () {
     ]))->assertCreated();
 });
 
-test('requires a lampiran for sakit', function () {
+test('does not require a lampiran for sakit of three working days or fewer', function () {
     $this->postJson('/test/validasi-pengajuan', ($this->payload)([
         'jenis' => 'sakit',
         'id_cuti' => null,
+        'tanggal_mulai' => '2026-11-18',
+        'tanggal_berakhir' => '2026-11-20',
+        'keterangan' => 'Demam tiga hari',
+    ]))->assertCreated();
+});
+
+test('requires a lampiran for sakit of four working days', function () {
+    $this->postJson('/test/validasi-pengajuan', ($this->payload)([
+        'jenis' => 'sakit',
+        'id_cuti' => null,
+        'tanggal_mulai' => '2026-11-17',
+        'tanggal_berakhir' => '2026-11-20',
+        'keterangan' => 'Surat dokter',
+    ]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('lampiran');
+});
+
+test('requires a lampiran for sakit that spans more than three working days', function () {
+    $this->postJson('/test/validasi-pengajuan', ($this->payload)([
+        'jenis' => 'sakit',
+        'id_cuti' => null,
+        'tanggal_mulai' => '2026-11-16',
+        'tanggal_berakhir' => '2026-11-20',
         'keterangan' => 'Surat dokter',
     ]))
         ->assertUnprocessable()

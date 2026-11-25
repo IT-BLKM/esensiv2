@@ -61,7 +61,8 @@ it('renders the multipart form with every pengajuan field', function () {
         ->assertSee('name="keterangan"', false)
         ->assertSee('name="lampiran"', false)
         ->assertSee('C01')
-        ->assertSee('Sisa kuota tahun 2026');
+        ->assertSee('Sisa kuota tahun 2026')
+        ->assertSee('Wajib untuk Sakit lebih dari 3 hari kerja');
 });
 
 it('rejects jenis cuti without id_cuti with a validation error', function () {
@@ -109,14 +110,31 @@ it('rejects client supplied owner and status', function () {
     $this->assertDatabaseCount('pengajuan', 0);
 });
 
-it('requires a lampiran when the pengajuan is sakit', function () {
+it('requires a lampiran when sakit lasts more than three working days', function () {
     $this->actingAs($this->user)
         ->postJson(route('pengajuan.store'), ($this->payload)([
             'jenis' => 'sakit',
             'id_cuti' => null,
+            'tanggal_mulai' => '2026-11-16',
+            'tanggal_berakhir' => '2026-11-20',
         ]))
         ->assertUnprocessable()
         ->assertJsonValidationErrors('lampiran');
+});
+
+it('accepts a short sakit without a lampiran', function () {
+    $this->actingAs($this->user)
+        ->post(route('pengajuan.store'), ($this->payload)([
+            'jenis' => 'sakit',
+            'id_cuti' => null,
+            'tanggal_mulai' => '2026-11-18',
+            'tanggal_berakhir' => '2026-11-20',
+            'keterangan' => 'Demam tiga hari',
+        ]))
+        ->assertRedirect(route('pengajuan.index'))
+        ->assertSessionHasNoErrors();
+
+    expect(Pengajuan::query()->where('keterangan', 'Demam tiga hari')->exists())->toBeTrue();
 });
 
 it('warns an unlinked account and refuses to store its pengajuan', function () {
@@ -206,4 +224,159 @@ it('shows the haji checkbox only when the selected cuti is C04', function () {
     expect($cekBlok($default))->toBe(['tersembunyi' => true, 'disabled' => true])
         ->and($cekBlok($denganC04))->toBe(['tersembunyi' => false, 'disabled' => false])
         ->and($cekBlok($denganC01))->toBe(['tersembunyi' => true, 'disabled' => true]);
+});
+
+it('redirects a new cuti tahunan to the pending one instead of creating a duplicate', function () {
+    $pending = Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cuti->id,
+        'tanggal_mulai' => '2026-11-10',
+        'tanggal_berakhir' => '2026-11-12',
+        'jenis' => 'cuti',
+        'keterangan' => 'Cuti tahunan pending',
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($this->user)
+        ->post(route('pengajuan.store'), ($this->payload)())
+        ->assertRedirect(route('pengajuan.edit', $pending))
+        ->assertSessionHas('warning');
+
+    expect(Pengajuan::count())->toBe(1)
+        ->and($pending->fresh()->tanggal_mulai)->toBe('2026-11-10');
+});
+
+it('renders the edit form with the pending pengajuan values', function () {
+    $pending = Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cuti->id,
+        'tanggal_mulai' => '2026-11-10',
+        'tanggal_berakhir' => '2026-11-12',
+        'jenis' => 'cuti',
+        'keterangan' => 'Cuti tahunan pending',
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($this->user)->get(route('pengajuan.edit', $pending))
+        ->assertOk()
+        ->assertSee('Ubah pengajuan')
+        ->assertSee('value="2026-11-10"', false)
+        ->assertSee('value="2026-11-12"', false)
+        ->assertSee('Cuti tahunan pending')
+        ->assertSee(route('pengajuan.update', $pending), false);
+});
+
+it('updates a pending pengajuan and keeps it pending', function () {
+    $pending = Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cuti->id,
+        'tanggal_mulai' => '2026-11-10',
+        'tanggal_berakhir' => '2026-11-12',
+        'jenis' => 'cuti',
+        'keterangan' => 'Cuti tahunan pending',
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($this->user)
+        ->put(route('pengajuan.update', $pending), ($this->payload)([
+            'tanggal_mulai' => '2026-11-23',
+            'tanggal_berakhir' => '2026-11-24',
+            'keterangan' => 'Cuti tahunan diperbaiki',
+        ]))
+        ->assertRedirect(route('pengajuan.show', $pending))
+        ->assertSessionHas('success');
+
+    $pending->refresh();
+
+    expect($pending->tanggal_mulai)->toBe('2026-11-23')
+        ->and($pending->tanggal_berakhir)->toBe('2026-11-24')
+        ->and($pending->keterangan)->toBe('Cuti tahunan diperbaiki')
+        ->and($pending->status)->toBe('pending')
+        ->and($pending->id_pegawai)->toBe($this->pegawai->id);
+});
+
+it('rejects editing a pengajuan that has already been decided', function () {
+    $approved = Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cuti->id,
+        'jenis' => 'cuti',
+        'status' => 'approved',
+    ]);
+
+    $this->actingAs($this->user)->get(route('pengajuan.edit', $approved))->assertForbidden();
+});
+
+it('rejects editing another pegawai pengajuan', function () {
+    $lainUser = User::factory()->create(['role' => 'pegawai']);
+    $lainPegawai = Pegawai::factory()->create(['user_id' => $lainUser->id]);
+    $pengajuanLain = Pengajuan::factory()->create([
+        'id_pegawai' => $lainPegawai->id,
+        'id_cuti' => $this->cuti->id,
+        'jenis' => 'cuti',
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($this->user)->get(route('pengajuan.edit', $pengajuanLain))->assertForbidden();
+});
+
+it('replaces the lampiran when a new file is uploaded', function () {
+    Storage::disk('local')->put('lampiran-pengajuan/lama.pdf', 'lama');
+
+    $pending = Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => null,
+        'jenis' => 'sakit',
+        'tanggal_mulai' => '2026-11-10',
+        'tanggal_berakhir' => '2026-11-10',
+        'keterangan' => 'Sakit pending',
+        'lampiran' => 'lampiran-pengajuan/lama.pdf',
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($this->user)
+        ->put(route('pengajuan.update', $pending), [
+            'jenis' => 'sakit',
+            'id_cuti' => null,
+            'tanggal_mulai' => '2026-11-10',
+            'tanggal_berakhir' => '2026-11-10',
+            'keterangan' => 'Sakit pending',
+            'lampiran' => UploadedFile::fake()->create('baru.pdf', 50, 'application/pdf'),
+        ])
+        ->assertRedirect(route('pengajuan.show', $pending))
+        ->assertSessionHasNoErrors();
+
+    $pathBaru = $pending->fresh()->lampiran;
+
+    expect($pathBaru)->not->toBe('lampiran-pengajuan/lama.pdf');
+    Storage::disk('local')->assertMissing('lampiran-pengajuan/lama.pdf');
+    Storage::disk('local')->assertExists($pathBaru);
+});
+
+it('keeps the existing lampiran when no new file is uploaded', function () {
+    Storage::disk('local')->put('lampiran-pengajuan/lama.pdf', 'lama');
+
+    $pending = Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => null,
+        'jenis' => 'sakit',
+        'tanggal_mulai' => '2026-11-10',
+        'tanggal_berakhir' => '2026-11-10',
+        'keterangan' => 'Sakit pending',
+        'lampiran' => 'lampiran-pengajuan/lama.pdf',
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($this->user)
+        ->put(route('pengajuan.update', $pending), [
+            'jenis' => 'sakit',
+            'id_cuti' => null,
+            'tanggal_mulai' => '2026-11-10',
+            'tanggal_berakhir' => '2026-11-10',
+            'keterangan' => 'Sakit pending diperbaiki',
+        ])
+        ->assertRedirect(route('pengajuan.show', $pending))
+        ->assertSessionHasNoErrors();
+
+    expect($pending->fresh()->lampiran)->toBe('lampiran-pengajuan/lama.pdf');
+    Storage::disk('local')->assertExists('lampiran-pengajuan/lama.pdf');
 });
