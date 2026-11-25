@@ -19,8 +19,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(MasterDataSeeder::class);
+
+        // Jangan pernah membuat akun/demo password di produksi. Admin
+        // produksi dibuat eksplisit lewat `php artisan admin:create`.
+        if (app()->isProduction()) {
+            return;
+        }
+
         $this->call([
-            MasterDataSeeder::class,
             PenggunaSeeder::class,
             AktivitasSeeder::class,
         ]);
