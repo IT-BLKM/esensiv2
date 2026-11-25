@@ -12,6 +12,10 @@
             <div class="mb-6 text-center">
                 <h1 class="text-2xl font-semibold text-gray-900">Reset Password Pegawai</h1>
                 <p class="mt-1 text-sm text-gray-600">{{ $pegawai->nama }} — NIP {{ $pegawai->nip }}</p>
+                <a
+                    href="{{ route('admin.pegawai.index') }}"
+                    class="mt-3 inline-flex items-center text-sm font-medium text-brand-700 hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                >Kembali ke daftar pegawai</a>
             </div>
 
             @if (session('status'))

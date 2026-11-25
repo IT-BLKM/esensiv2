@@ -50,6 +50,8 @@ it('lets an admin open the reset form without a password input', function () {
         ->assertSee('Budi Santoso')
         ->assertSee('199302032022032001')
         ->assertSee(route('admin.pegawai.password.update', $pegawai), false)
+        ->assertSee(route('admin.pegawai.index'), false)
+        ->assertSee('Kembali ke daftar pegawai')
         ->assertSee('Buat password baru')
         ->assertDontSee('name="password"', false);
 });

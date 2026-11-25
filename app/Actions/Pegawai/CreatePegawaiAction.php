@@ -14,20 +14,21 @@ class CreatePegawaiAction
     /**
      * Buat pegawai dan akun user-nya dalam satu transaksi.
      *
-     * @param  array{nip: string, nama: string, jabatan: string, id_dept: int, no_hp: string, foto?: UploadedFile|null}  $data
+     * @param  array{nip: string, email: string, nama: string, jabatan: string, id_dept: int, no_hp: string, foto?: UploadedFile|null}  $data
      * @return array{pegawai: Pegawai, passwordAwal: string}
      */
     public function __invoke(array $data): array
     {
         $foto = $data['foto'] ?? null;
-        unset($data['foto']);
+        $email = $data['email'];
+        unset($data['foto'], $data['email']);
 
         $passwordAwal = ($this->buatPasswordAwal)();
 
-        $pegawai = DB::transaction(function () use ($data, $foto, $passwordAwal): Pegawai {
+        $pegawai = DB::transaction(function () use ($data, $foto, $email, $passwordAwal): Pegawai {
             $user = User::create([
                 'nama' => $data['nama'],
-                'email' => "{$data['nip']}@presensi.test",
+                'email' => $email,
                 'password' => $passwordAwal,
                 'role' => 'pegawai',
             ]);
