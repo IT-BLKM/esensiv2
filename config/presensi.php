@@ -29,4 +29,38 @@ return [
 
     'radius' => (int) env('PRESENSI_RADIUS', 25000),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Batas Keterlambatan
+    |--------------------------------------------------------------------------
+    |
+    | Batas masuk TIDAK di-hardcode di sini: setiap baris presensi dibandingkan
+    | dengan `jam_masuk` shift-nya sendiri (tabel jam_kerja), sesuai jadwal
+    | pegawai pada hari itu. Nilai `07:30` pada sistem lama tidak dipakai lagi.
+    |
+    | `kode_jam_kerja_diabaikan` berisi kode shift yang tidak dihitung terlambat
+    | — data lama memakai JK03 untuk lembur/akhir pekan. Pisahkan dengan koma
+    | lewat .env; kosongkan bila semua shift harus dihitung (issue #34).
+    |
+    */
+
+    'kode_jam_kerja_diabaikan' => array_values(array_filter(array_map(
+        static fn (string $kode): string => strtoupper(trim($kode)),
+        explode(',', (string) env('PRESENSI_KODE_JAM_KERJA_DIABAIKAN', 'JK03')),
+    ))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Zona Waktu Absensi
+    |--------------------------------------------------------------------------
+    |
+    | Tanggal absensi ("hari ini", "bulan ini") dihitung pada zona waktu kantor,
+    | bukan zona waktu aplikasi. `config/app.php` masih UTC; sistem lama memakai
+    | Asia/Jakarta. Tanpa nilai ini, dashboard bisa menampilkan tanggal kemarin
+    | pada pukul 00:00–07:00 WIB (issue #34).
+    |
+    */
+
+    'zona_waktu' => (string) env('PRESENSI_ZONA_WAKTU', 'Asia/Jakarta'),
+
 ];
