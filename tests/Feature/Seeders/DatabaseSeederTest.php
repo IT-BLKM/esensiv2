@@ -1,5 +1,6 @@
 <?php
 
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -84,4 +85,16 @@ test('seeded pegawai uses the known demo password', function () {
 
     expect($pegawai)->not->toBeNull()
         ->and(Hash::check('password', $pegawai->password))->toBeTrue();
+});
+
+test('production seeding only creates master data without demo accounts', function () {
+    $this->app['env'] = 'production';
+
+    (new DatabaseSeeder)->run();
+
+    $this->assertDatabaseCount('departemen', 5);
+    $this->assertDatabaseCount('cuti', 4);
+    $this->assertDatabaseCount('user', 0);
+    $this->assertDatabaseCount('pegawai', 0);
+    $this->assertDatabaseCount('pengajuan', 0);
 });
