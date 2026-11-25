@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -42,6 +43,14 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::guard('web')->user();
+
+        if (config('hashing.rehash_on_login', true) && Hash::needsRehash($user->password)) {
+            $user->forceFill([
+                'password' => Hash::make($request->validated('password')),
+            ])->save();
+
+            Log::info('Password di-rehash ke Argon2id.', ['user_id' => $user->id]);
+        }
 
         Log::info('Login berhasil.', [
             'user_id' => $user->id,
