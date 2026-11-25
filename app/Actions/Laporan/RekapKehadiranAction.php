@@ -156,6 +156,149 @@ class RekapKehadiranAction
     }
 
     /**
+     * Rekap keterlambatan satu pegawai pada satu bulan.
+     *
+     * @return array<string, mixed>
+     */
+    public function pegawaiBulanan(Pegawai $pegawai, int $tahun, int $bulan): array
+    {
+        $mulai = CarbonImmutable::create($tahun, $bulan, 1, 0, 0, 0, $this->zonaWaktu())->startOfMonth();
+
+        return $this->ringkasBulanan(
+            $this->presensiPeriode($pegawai, $mulai, $mulai->endOfMonth()),
+            $mulai,
+        );
+    }
+
+    /**
+     * Rekap keterlambatan satu pegawai pada satu tahun.
+     *
+     * @return array<string, mixed>
+     */
+    public function pegawaiTahunan(Pegawai $pegawai, int $tahun): array
+    {
+        $mulai = CarbonImmutable::create($tahun, 1, 1, 0, 0, 0, $this->zonaWaktu())->startOfYear();
+
+        return $this->ringkasTahunan(
+            $this->presensiPeriode($pegawai, $mulai, $mulai->endOfYear()),
+            $mulai,
+        );
+    }
+
+    /**
+     * Rekap keterlambatan semua pegawai pada satu bulan.
+     *
+     * @return array<string, mixed>
+     */
+    public function semuaBulanan(int $tahun, int $bulan): array
+    {
+        $mulai = CarbonImmutable::create($tahun, $bulan, 1, 0, 0, 0, $this->zonaWaktu())->startOfMonth();
+
+        return $this->rekapSemua($mulai, $mulai->endOfMonth(), true);
+    }
+
+    /**
+     * Rekap keterlambatan semua pegawai pada satu tahun.
+     *
+     * @return array<string, mixed>
+     */
+    public function semuaTahunan(int $tahun): array
+    {
+        $mulai = CarbonImmutable::create($tahun, 1, 1, 0, 0, 0, $this->zonaWaktu())->startOfYear();
+
+        return $this->rekapSemua($mulai, $mulai->endOfYear(), false);
+    }
+
+    /**
+     * Satu jalur rekap untuk dashboard admin dan halaman rekap (#44):
+     * angka per pegawai berasal dari ringkasBulanan/ringkasTahunan yang sama
+     * dengan dashboard pegawai dan laporan bulanan.
+     *
+     * @return array<string, mixed>
+     */
+    private function rekapSemua(CarbonImmutable $mulai, CarbonImmutable $selesai, bool $bulanan): array
+    {
+        $kodeDiabaikan = $this->kodeJamKerjaDiabaikan();
+
+        $presensi = Presensi::query()
+            ->with(['jamKerja', 'pengajuan', 'penggantianKeterlambatan'])
+            ->whereBetween('tgl_presensi', [$mulai->toDateString(), $selesai->toDateString()])
+            ->get()
+            ->groupBy('id_pegawai');
+
+        $pegawai = Pegawai::query()
+            ->with('departemen:id,kode,nama')
+            ->orderBy('nama')
+            ->get(['id', 'nip', 'nama', 'id_dept']);
+
+        $baris = [];
+
+        foreach ($pegawai as $item) {
+            $presensiPegawai = $presensi->get($item->id) ?? collect();
+            $ringkas = $bulanan
+                ? $this->ringkasBulanan($presensiPegawai, $mulai, $kodeDiabaikan)
+                : $this->ringkasTahunan($presensiPegawai, $mulai, $kodeDiabaikan);
+
+            $hariTerlambat = $bulanan ? $ringkas['terlambat'] : $ringkas['hariTerlambat'];
+
+            $baris[] = [
+                'id' => $item->id,
+                'nip' => $item->nip,
+                'nama' => $item->nama,
+                'departemen' => $item->departemen?->nama,
+                'hariTerlambat' => $hariTerlambat,
+                'totalMenitTerlambat' => $ringkas['totalMenitTerlambat'],
+                'totalMenitTerlambatTeks' => $ringkas['totalMenitTerlambatTeks'],
+                'tepatWaktu' => $bulanan ? $ringkas['tepatWaktu'] : null,
+                'cuti' => $bulanan ? $ringkas['cuti'] : null,
+                'sakit' => $bulanan ? $ringkas['sakit'] : null,
+                'dl' => $bulanan ? $ringkas['dl'] : null,
+                'totalHari' => $bulanan ? $ringkas['totalHari'] : null,
+            ];
+        }
+
+        usort($baris, function (array $a, array $b): int {
+            return $b['totalMenitTerlambat'] <=> $a['totalMenitTerlambat']
+                ?: strcmp($a['nama'], $b['nama']);
+        });
+
+        $totalMenit = array_sum(array_column($baris, 'totalMenitTerlambat'));
+        $totalHari = array_sum(array_column($baris, 'hariTerlambat'));
+
+        return [
+            'labelPeriode' => $bulanan
+                ? $mulai->locale('id')->translatedFormat('F Y')
+                : $mulai->format('Y'),
+            'baris' => $baris,
+            'ringkasan' => [
+                'totalPegawai' => count($baris),
+                'pegawaiTerlambat' => count(array_filter($baris, fn (array $item): bool => $item['hariTerlambat'] > 0)),
+                'totalHariTerlambat' => $totalHari,
+                'totalMenitTerlambat' => $totalMenit,
+                'totalMenitTerlambatTeks' => $this->formatMenit($totalMenit),
+            ],
+        ];
+    }
+
+    /**
+     * @return Collection<int, Presensi>
+     */
+    private function presensiPeriode(Pegawai $pegawai, CarbonImmutable $mulai, CarbonImmutable $selesai): Collection
+    {
+        return Presensi::query()
+            ->with(['jamKerja', 'pengajuan', 'penggantianKeterlambatan'])
+            ->where('id_pegawai', $pegawai->id)
+            ->whereBetween('tgl_presensi', [$mulai->toDateString(), $selesai->toDateString()])
+            ->orderBy('tgl_presensi')
+            ->get();
+    }
+
+    private function zonaWaktu(): string
+    {
+        return (string) config('presensi.zona_waktu', 'Asia/Jakarta');
+    }
+
+    /**
      * Ringkasan satu bulan dari baris presensi yang sudah difilter.
      *
      * Dipakai dashboard (#34). Rekap semua pegawai (#44) dapat mengelompokkan

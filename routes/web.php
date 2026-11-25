@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CutiController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\Admin\PengajuanController as PengajuanAdminController;
+use App\Http\Controllers\Admin\RekapKeterlambatanController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\Pegawai\DashboardController;
@@ -93,7 +95,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
-        Route::get('/dashboard', fn () => view('admin.dashboard'))->name('dashboard');
+        Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
 
         Route::get('/pegawai/{pegawai}/password/edit', [PegawaiPasswordController::class, 'edit'])
             ->name('pegawai.password.edit');
@@ -149,6 +151,7 @@ Route::middleware('auth')->group(function () {
             ->name('pengajuan.cancel');
 
         Route::get('/laporan', LaporanAdminController::class)->name('laporan.index');
+        Route::get('/rekap-keterlambatan', RekapKeterlambatanController::class)->name('rekap.index');
         Route::get('/laporan/export/excel', [LaporanExportController::class, 'excel'])->name('laporan.export.excel');
         Route::get('/laporan/export/pdf', [LaporanExportController::class, 'pdf'])->name('laporan.export.pdf');
         Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
