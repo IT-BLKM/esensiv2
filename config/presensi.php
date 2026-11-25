@@ -63,4 +63,24 @@ return [
 
     'zona_waktu' => (string) env('PRESENSI_ZONA_WAKTU', 'Asia/Jakarta'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Identitas Kantor untuk Laporan
+    |--------------------------------------------------------------------------
+    |
+    | Dipakai header PDF/Excel laporan presensi. Dapat diubah lewat .env tanpa
+    | menyentuh view. Default mengikuti dokumen laporan lama.
+    |
+    */
+
+    'nama_kantor' => (string) env(
+        'PRESENSI_NAMA_KANTOR',
+        'Balai Laboratorium Kesehatan Masyarakat Palembang',
+    ),
+
+    'alamat_kantor' => (string) env(
+        'PRESENSI_ALAMAT_KANTOR',
+        'Jl. SMB II No. 55, KM. 11 Alang-alang Lebar, Palembang 30154',
+    ),
+
 ];

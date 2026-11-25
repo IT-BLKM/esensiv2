@@ -70,6 +70,46 @@
             </form>
         </x-card>
 
+        <x-card title="Unduh laporan" subtitle="File mengikuti filter bulan/tahun di atas.">
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <p class="text-sm font-medium text-gray-900">Semua pegawai</p>
+
+                    <form method="GET" action="{{ route('admin.laporan.export.excel') }}" class="inline">
+                        <input type="hidden" name="bulan" value="{{ $bulan }}">
+                        <input type="hidden" name="tahun" value="{{ $tahun }}">
+                        <x-button type="submit" variant="secondary" size="sm">Excel semua pegawai</x-button>
+                    </form>
+
+                    <form method="GET" action="{{ route('admin.laporan.export.pdf') }}" class="inline">
+                        <input type="hidden" name="bulan" value="{{ $bulan }}">
+                        <input type="hidden" name="tahun" value="{{ $tahun }}">
+                        <x-button type="submit" variant="secondary" size="sm">PDF semua pegawai</x-button>
+                    </form>
+                </div>
+
+                @if ($pegawai !== null)
+                    <div class="flex flex-wrap items-center gap-3">
+                        <p class="text-sm font-medium text-gray-900">{{ $pegawai->nama }}</p>
+
+                        <form method="GET" action="{{ route('admin.laporan.export.excel') }}" class="inline">
+                            <input type="hidden" name="id_pegawai" value="{{ $pegawai->id }}">
+                            <input type="hidden" name="bulan" value="{{ $bulan }}">
+                            <input type="hidden" name="tahun" value="{{ $tahun }}">
+                            <x-button type="submit" variant="primary" size="sm">Excel pegawai ini</x-button>
+                        </form>
+
+                        <form method="GET" action="{{ route('admin.laporan.export.pdf') }}" class="inline">
+                            <input type="hidden" name="id_pegawai" value="{{ $pegawai->id }}">
+                            <input type="hidden" name="bulan" value="{{ $bulan }}">
+                            <input type="hidden" name="tahun" value="{{ $tahun }}">
+                            <x-button type="submit" variant="primary" size="sm">PDF pegawai ini</x-button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        </x-card>
+
         @if ($pegawai === null)
             <x-alert variant="info" title="Pilih pegawai">
                 Pilih pegawai pada filter di atas untuk menampilkan laporan bulanan.
