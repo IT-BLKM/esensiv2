@@ -526,3 +526,49 @@ it('uses friday shift end for the replacement window', function () {
         ->and($ganti->batas_pulang)->toBe('16:55:00')
         ->and($ganti->terpenuhi)->toBeTrue();
 });
+
+it('allows an early checkout after the pegawai confirms the warning', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi())
+        ->assertCreated();
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 15:30:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), [
+            ...payloadStorePresensi('keluar'),
+            'konfirmasi_pulang_cepat' => '1',
+        ])
+        ->assertOk()
+        ->assertJsonPath('status', 'success')
+        ->assertJsonPath('type', 'keluar')
+        ->assertJsonPath('data.jam_keluar', '15:30');
+
+    expect(Presensi::query()->sole()->jam_keluar)->toBe('15:30:00');
+});
+
+it('keeps half day dinas luar out of early checkout even with confirmation', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+    buatDlSetengahStorePresensi($pegawai);
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 10:00:00', 'Asia/Jakarta'));
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi('masuk'))
+        ->assertCreated();
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 12:00:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), [
+            ...payloadStorePresensi('keluar'),
+            'konfirmasi_pulang_cepat' => '1',
+        ])
+        ->assertStatus(409)
+        ->assertJsonPath('type', 'dl_setengah');
+
+    expect(Presensi::query()->sole()->jam_keluar)->toBeNull();
+});

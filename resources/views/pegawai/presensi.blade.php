@@ -93,6 +93,8 @@
             data-kantor-radius="{{ $kantor['radius'] }}"
             data-models-url="{{ asset('models') }}"
             data-store-url="{{ route('presensi.store') }}"
+            data-jam-pulang="{{ $shift['jamPulang'] ?? '' }}"
+            data-zona-waktu="{{ config('presensi.zona_waktu', 'Asia/Jakarta') }}"
         >
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">Presensi</h1>
@@ -289,6 +291,7 @@
                     <input type="hidden" name="foto" id="input-foto">
                     <input type="hidden" name="koordinat" id="input-koordinat">
                     <input type="hidden" name="akurasi" id="input-akurasi">
+                    <input type="hidden" name="konfirmasi_pulang_cepat" id="input-konfirmasi-pulang-cepat" value="0">
 
                     <div class="flex flex-wrap items-center gap-2">
                         <x-button
