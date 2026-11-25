@@ -44,4 +44,10 @@ test('seeds the full development dataset when all migrations are available', fun
     $this->assertDatabaseCount('cuti', 4);
     $this->assertDatabaseCount('konfigurasi_jam_kerja', 25);
     $this->assertDatabaseCount('saldo_cuti', 25);
+
+    // Keputusan #7: 12/90/30/90, maks_bawa 6 hanya untuk C01.
+    $this->assertDatabaseHas('cuti', ['kode' => 'C01', 'maks_hari' => 12, 'kuota' => 12, 'maks_bawa' => 6]);
+    $this->assertDatabaseHas('cuti', ['kode' => 'C02', 'maks_hari' => 90, 'kuota' => 90, 'maks_bawa' => 0]);
+    $this->assertDatabaseHas('cuti', ['kode' => 'C03', 'maks_hari' => 30, 'kuota' => 30, 'maks_bawa' => 0]);
+    $this->assertDatabaseHas('cuti', ['kode' => 'C04', 'maks_hari' => 90, 'kuota' => 90, 'maks_bawa' => 0]);
 });
