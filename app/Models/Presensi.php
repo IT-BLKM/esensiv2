@@ -15,6 +15,18 @@ class Presensi extends Model
     use HasFactory;
 
     /**
+     * Label tampilan untuk enum `presensi.status`.
+     *
+     * @var array<string, string>
+     */
+    public const LABEL_STATUS = [
+        'hadir' => 'Hadir',
+        'cuti' => 'Cuti',
+        'sakit' => 'Sakit',
+        'dl' => 'Dinas Luar',
+    ];
+
+    /**
      * Nama tabel eksplisit sesuai spesifikasi Database Esensi.
      */
     protected $table = 'presensi';
