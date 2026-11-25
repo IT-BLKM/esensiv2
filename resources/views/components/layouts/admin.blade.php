@@ -22,9 +22,6 @@
         ['label' => 'Laporan', 'icon' => 'laporan', 'route' => 'admin.laporan.index', 'pola' => 'admin.laporan.*'],
         ['label' => 'Konfigurasi', 'icon' => 'konfigurasi', 'route' => 'admin.konfigurasi.index', 'pola' => 'admin.konfigurasi.*'],
     ];
-
-    /* Pesan sesi yang boleh tampil — varian mengikuti x-alert. */
-    $pesanSesi = ['success' => 'success', 'warning' => 'warning', 'error' => 'danger'];
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -48,12 +45,17 @@
                 <x-icon name="menu" />
             </button>
 
+            {{--
+                Teks "Esensi" dihapus dari header atas permintaan QA (25 Nov 2026).
+                Karena gambar logo bersifat dekoratif (alt=""), tautan jadi tanpa
+                nama aksesibel — aria-label ini yang menggantikannya.
+            --}}
             <a
                 href="{{ route('admin.dashboard') }}"
+                aria-label="Beranda admin"
                 class="flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
             >
                 <img src="{{ asset('images/logo-esensi.jpg') }}" alt="" class="h-8 w-auto object-contain">
-                <span class="text-sm font-semibold text-gray-900">Esensi</span>
             </a>
 
             <div class="ml-auto flex items-center gap-3">
@@ -93,11 +95,7 @@
         </nav>
 
         <main class="flex-1 p-4 md:p-6">
-            @foreach ($pesanSesi as $kunci => $variant)
-                @if (session($kunci))
-                    <x-alert :variant="$variant" class="mb-4">{{ session($kunci) }}</x-alert>
-                @endif
-            @endforeach
+            <x-flash />
 
             {{ $slot }}
         </main>

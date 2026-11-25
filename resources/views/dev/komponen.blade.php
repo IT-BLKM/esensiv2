@@ -197,7 +197,7 @@
 
             <x-card>
                 <div class="flex flex-wrap gap-x-6 gap-y-4 text-gray-700">
-                    @foreach (['dashboard', 'pegawai', 'departemen', 'jam', 'cuti', 'monitoring', 'pengajuan', 'laporan', 'konfigurasi', 'user', 'menu', 'logout'] as $nama)
+                    @foreach (['dashboard', 'pegawai', 'departemen', 'jam', 'cuti', 'monitoring', 'presensi', 'histori', 'pengajuan', 'laporan', 'konfigurasi', 'user', 'menu', 'logout'] as $nama)
                         <div class="flex w-24 flex-col items-center gap-1.5">
                             <x-icon :name="$nama" size="lg" />
                             <span class="text-center text-xs text-gray-600">{{ $nama }}</span>
@@ -212,9 +212,16 @@
             <div>
                 <h2 class="text-lg font-semibold">8. Layout halaman</h2>
                 <p class="text-sm text-gray-600">
-                    Seluruh halaman admin memakai <code class="rounded bg-gray-200 px-1">&lt;x-layouts.admin title="..."&gt;</code>
-                    (header, sidebar menu, pesan sesi, footer). Lihat langsung dengan masuk sebagai admin ke
-                    <a class="font-medium text-brand-700 underline underline-offset-4" href="{{ route('admin.dashboard') }}">{{ route('admin.dashboard') }}</a>.
+                    Dua layout dipakai sesuai peran (lihat <code class="rounded bg-gray-200 px-1">docs/konvensi-ui.md</code> §4.1):
+                    <strong>admin</strong> —
+                    <code class="rounded bg-gray-200 px-1">&lt;x-layouts.admin&gt;</code> (sidebar + header + footer) —
+                    dan <strong>pegawai</strong> —
+                    <code class="rounded bg-gray-200 px-1">&lt;x-layouts.pegawai&gt;</code> (bottom nav mobile).
+                    Pesan sesi di keduanya lewat <code class="rounded bg-gray-200 px-1">&lt;x-flash /&gt;</code>.
+                    Lihat langsung dengan masuk sebagai admin ke
+                    <a class="font-medium text-brand-700 underline underline-offset-4" href="{{ route('admin.dashboard') }}">{{ route('admin.dashboard') }}</a>
+                    atau sebagai pegawai ke
+                    <a class="font-medium text-brand-700 underline underline-offset-4" href="{{ route('dashboard') }}">{{ route('dashboard') }}</a>.
                 </p>
             </div>
         </section>
