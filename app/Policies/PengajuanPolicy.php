@@ -38,6 +38,15 @@ class PengajuanPolicy
         return $this->milikAtauAdmin($user, $pengajuan->id_pegawai);
     }
 
+    /**
+     * Approve/reject hanya untuk admin. Dipakai action keputusan (#39),
+     * terpisah dari update biasa agar pegawai tidak bisa memutuskan sendiri.
+     */
+    public function decide(User $user, Pengajuan $pengajuan): bool
+    {
+        return $user->role === 'admin';
+    }
+
     private function milikAtauAdmin(User $user, int $idPegawai): bool
     {
         return $user->role === 'admin' || $user->pegawai?->id === $idPegawai;
