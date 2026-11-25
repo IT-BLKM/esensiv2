@@ -175,7 +175,10 @@
                     </div>
 
                     <x-alert id="pesan-kamera" variant="danger" class="hidden" role="alert"></x-alert>
-                    <x-alert id="pesan-model" variant="warning" class="hidden" role="status"></x-alert>
+                    <x-alert id="pesan-model" variant="warning" class="hidden" role="status">
+                        Deteksi wajah tidak tersedia. Webcam tetap bisa dipakai; absen dapat
+                        dilanjutkan tanpa verifikasi wajah.
+                    </x-alert>
                 </div>
             </x-card>
 

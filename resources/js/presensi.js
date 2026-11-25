@@ -2,20 +2,25 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 /*
- * Halaman presensi (issue #31 — UI saja).
+ * Halaman presensi (#31) + penyimpanan ke server (#32).
  *
  * Urutan kerja:
  * 1. Model deteksi wajah dimuat dari public/models sejak halaman dibuka.
  * 2. Kamera baru diminta setelah pengguna menekan "Nyalakan kamera".
  * 3. Lokasi diminta setelah pengguna menekan "Ambil lokasi".
  * 4. Tombol absen hanya aktif bila shift ada, kamera siap, lokasi siap, dan
- *    wajah terdeteksi. Bila model gagal dimuat, absen tetap bisa dilakukan
- *    (fallback issue #35) dengan pesan yang jelas.
+ *    wajah terdeteksi. Bila model gagal dimuat atau melewati batas waktu,
+ *    absen tetap bisa dilakukan (fallback issue #35) dengan pesan yang jelas.
+ *
+ * Model: `tiny_face_detector` dari @vladmandic/face-api, disalin ke
+ * public/models agar tidak bergantung CDN saat runtime.
  *
  * Penyimpanan ke server ditangani `presensi.store` (StorePresensiAction,
  * issue #32). Bila server menerima, halaman dimuat ulang agar status
  * masuk/keluar ikut berubah.
  */
+
+const BATAS_MUAT_MODEL_MS = 10000;
 
 const root = document.getElementById('halaman-presensi');
 
@@ -66,6 +71,7 @@ function mulaiPresensi(root) {
         penanda: null,
         lingkaranAkurasi: null,
         deteksiTimer: null,
+        galatDeteksi: 0,
         sibuk: false,
     };
 
@@ -147,20 +153,43 @@ function mulaiPresensi(root) {
         }
     }
 
+    function denganBatasWaktu(janji, milidetik) {
+        return new Promise((selesai, gagal) => {
+            const timer = window.setTimeout(
+                () => gagal(new Error('Waktu memuat model deteksi wajah habis.')),
+                milidetik,
+            );
+
+            janji.then(
+                (hasil) => {
+                    window.clearTimeout(timer);
+                    selesai(hasil);
+                },
+                (error) => {
+                    window.clearTimeout(timer);
+                    gagal(error);
+                },
+            );
+        });
+    }
+
     async function muatModel() {
         try {
-            const faceapi = await import('@vladmandic/face-api');
+            const faceapi = await denganBatasWaktu(
+                import('@vladmandic/face-api'),
+                BATAS_MUAT_MODEL_MS,
+            );
 
-            await faceapi.nets.tinyFaceDetector.loadFromUri(root.dataset.modelsUrl);
+            await denganBatasWaktu(
+                faceapi.nets.tinyFaceDetector.loadFromUri(root.dataset.modelsUrl),
+                BATAS_MUAT_MODEL_MS,
+            );
 
             state.faceapi = faceapi;
             state.modelSiap = true;
         } catch (error) {
             state.modelGagal = true;
-            tampilkan(
-                pesanModel,
-                'Model deteksi wajah gagal dimuat. Webcam dan absen tetap bisa dipakai tanpa verifikasi wajah.',
-            );
+            pesanModel?.classList.remove('hidden');
         }
 
         perbaruiStatusWajah();
@@ -235,6 +264,10 @@ function mulaiPresensi(root) {
     }
 
     async function deteksiWajah() {
+        if (state.modelGagal) {
+            return;
+        }
+
         if (!state.modelSiap || !state.kameraSiap || !state.faceapi || document.hidden) {
             jadwalkanDeteksi();
 
@@ -249,6 +282,8 @@ function mulaiPresensi(root) {
                 );
                 const terdeteksi = Boolean(hasil);
 
+                state.galatDeteksi = 0;
+
                 if (terdeteksi !== state.wajahTerdeteksi) {
                     state.wajahTerdeteksi = terdeteksi;
                     perbaruiStatusWajah();
@@ -256,7 +291,22 @@ function mulaiPresensi(root) {
                 }
             }
         } catch (error) {
-            // Deteksi gagal sesaat (mis. video belum siap); coba lagi di putaran berikutnya.
+            /*
+             * Error sesaat (mis. video belum siap) diabaikan. Bila terus
+             * berulang, deteksi dianggap tidak tersedia agar tombol absen tidak
+             * terkunci selamanya — fallback issue #35.
+             */
+            state.galatDeteksi++;
+
+            if (state.galatDeteksi >= 5) {
+                state.modelGagal = true;
+                state.wajahTerdeteksi = false;
+                pesanModel?.classList.remove('hidden');
+                perbaruiStatusWajah();
+                perbaruiTombol();
+
+                return;
+            }
         }
 
         jadwalkanDeteksi();
