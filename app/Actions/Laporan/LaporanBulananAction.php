@@ -39,6 +39,7 @@ class LaporanBulananAction
      *         status: string,
      *         statusLabel: string,
      *         menitTerlambat: int,
+     *         jmlJam: string,
      *         penggantian: array<string, mixed>|null
      *     }>,
      *     ringkasan: array<string, mixed>
@@ -75,6 +76,7 @@ class LaporanBulananAction
                     'status' => $item->status,
                     'statusLabel' => Presensi::LABEL_STATUS[$item->status] ?? ucfirst($item->status),
                     'menitTerlambat' => ($this->hitungMenitTerlambat)($item),
+                    'jmlJam' => $this->jmlJam($item->jam_masuk, $item->jam_keluar),
                     'penggantian' => ($this->hitungPenggantian)($item),
                 ];
             })
@@ -91,5 +93,26 @@ class LaporanBulananAction
     private function formatJam(?string $jam): ?string
     {
         return $jam === null || $jam === '' ? null : Carbon::parse($jam)->format('H:i');
+    }
+
+    /**
+     * Total jam kerja untuk kolom "Jml Jam" pada laporan/ekspor.
+     */
+    private function jmlJam(?string $masuk, ?string $keluar): string
+    {
+        if ($masuk === null || $keluar === null || $masuk === '' || $keluar === '') {
+            return '-';
+        }
+
+        $awal = Carbon::parse($masuk);
+        $akhir = Carbon::parse($keluar);
+
+        if ($akhir->lt($awal)) {
+            return '-';
+        }
+
+        $menit = (int) $awal->diffInMinutes($akhir);
+
+        return intdiv($menit, 60).':'.str_pad((string) ($menit % 60), 2, '0', STR_PAD_LEFT);
     }
 }

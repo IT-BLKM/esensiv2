@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
 use App\Http\Controllers\Admin\LaporanController as LaporanAdminController;
+use App\Http\Controllers\Admin\LaporanExportController;
 use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
@@ -148,6 +149,8 @@ Route::middleware('auth')->group(function () {
             ->name('pengajuan.cancel');
 
         Route::get('/laporan', LaporanAdminController::class)->name('laporan.index');
+        Route::get('/laporan/export/excel', [LaporanExportController::class, 'excel'])->name('laporan.export.excel');
+        Route::get('/laporan/export/pdf', [LaporanExportController::class, 'pdf'])->name('laporan.export.pdf');
         Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
         Route::get('/konfigurasi/{pegawai}/edit', [KonfigurasiJamKerjaController::class, 'edit'])
             ->name('konfigurasi.edit');

@@ -69,6 +69,8 @@ it('asks the admin to choose a pegawai before showing a report', function () {
     $this->actingAs($admin)->get(route('admin.laporan.index'))
         ->assertOk()
         ->assertSee('Pilih pegawai pada filter di atas')
+        ->assertSee('Excel semua pegawai')
+        ->assertSee('PDF semua pegawai')
         ->assertDontSee('Daftar harian');
 });
 
@@ -100,6 +102,10 @@ it('shows daily rows and monthly recap for the selected pegawai', function () {
         ->assertSee('Sakit')
         ->assertSee('Dinas Luar')
         ->assertSee('15 menit')
+        ->assertSee('Excel pegawai ini')
+        ->assertSee('PDF pegawai ini')
+        ->assertSee(route('admin.laporan.export.excel'), false)
+        ->assertSee(route('admin.laporan.export.pdf'), false)
         ->assertDontSee('31 Okt 2026');
 });
 
