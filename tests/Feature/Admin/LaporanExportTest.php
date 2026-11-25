@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Laporan\LaporanSemuaPegawaiAction;
+use App\Actions\Laporan\TulisExcelLaporanAction;
 use App\Models\JamKerja;
 use App\Models\Pegawai;
 use App\Models\Presensi;
@@ -7,6 +9,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use OpenSpout\Reader\XLSX\Reader;
 
 uses(LazilyRefreshDatabase::class);
 
@@ -145,4 +148,54 @@ it('rejects invalid export filters', function () {
         'tahun' => 1999,
     ]))
         ->assertSessionHasErrors(['id_pegawai', 'bulan', 'tahun']);
+});
+
+it('marks late cells and adds a TL column in the all-pegawai Excel matrix', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftExportLaporan();
+    $pegawai = pegawaiExportLaporan();
+    presensiExportLaporan($pegawai, $shift, '2026-11-02');
+
+    $data = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
+    $path = app(TulisExcelLaporanAction::class)->semua($data);
+
+    $reader = new Reader;
+    $reader->open($path);
+    $rows = [];
+
+    foreach ($reader->getSheetIterator() as $sheet) {
+        foreach ($sheet->getRowIterator() as $row) {
+            $rows[] = array_map(fn ($cell) => $cell->getValue(), $row->cells);
+        }
+    }
+
+    $reader->close();
+    unlink($path);
+
+    $header = collect($rows)->first(fn (array $row): bool => in_array('NIP', $row, true));
+    $dataRow = collect($rows)->first(fn (array $row): bool => in_array($pegawai->nama, $row, true));
+
+    expect($header)->toContain('TL')
+        ->and($dataRow)->toContain('H!')
+        ->and($dataRow)->toContain(1);
+});
+
+it('renders late markers and TL in the all-pegawai PDF view', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftExportLaporan();
+    $pegawai = pegawaiExportLaporan();
+    presensiExportLaporan($pegawai, $shift, '2026-11-02');
+
+    $data = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
+
+    $html = view('admin.laporan-pdf-semua', [
+        'data' => $data,
+        'logo' => null,
+        'namaKantor' => 'Kantor Uji',
+        'alamatKantor' => 'Alamat Uji',
+    ])->render();
+
+    expect($html)->toContain('TL')
+        ->and($html)->toContain('H!')
+        ->and($html)->toContain('hadir terlambat');
 });

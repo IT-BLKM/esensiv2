@@ -49,7 +49,7 @@ class TulisExcelLaporanAction
             ], $header));
 
             foreach ($data['baris'] as $index => $item) {
-                $writer->addRow(Row::fromValues([
+                $nilai = [
                     $index + 1,
                     Carbon::parse((string) $item['tanggal'])->format('d-m-Y'),
                     $item['hari'],
@@ -59,7 +59,13 @@ class TulisExcelLaporanAction
                     $item['statusLabel'],
                     $this->keteranganTerlambat($item),
                     $item['jmlJam'],
-                ]));
+                ];
+
+                $writer->addRow(
+                    $item['menitTerlambat'] > 0
+                        ? Row::fromValuesWithStyle($nilai, $this->gayaTerlambat())
+                        : Row::fromValues($nilai),
+                );
             }
 
             $writer->addRow(Row::fromValues([]));
@@ -87,7 +93,7 @@ class TulisExcelLaporanAction
             $writer->addRow(Row::fromValues(['Periode', $data['labelPeriode']]));
             $writer->addRow(Row::fromValues([]));
 
-            $kolom = ['NIP', 'Nama Pegawai', ...array_map('strval', $data['hari']), 'H', 'DL', 'C', 'S', 'A'];
+            $kolom = ['NIP', 'Nama Pegawai', ...array_map('strval', $data['hari']), 'H', 'DL', 'C', 'S', 'A', 'TL'];
             $writer->addRow(Row::fromValuesWithStyle($kolom, $header));
 
             foreach ($data['baris'] as $item) {
@@ -102,8 +108,13 @@ class TulisExcelLaporanAction
                 $nilai[] = $item['c'];
                 $nilai[] = $item['s'];
                 $nilai[] = $item['a'];
+                $nilai[] = $item['tl'];
 
-                $writer->addRow(Row::fromValues($nilai));
+                $writer->addRow(
+                    $item['tl'] > 0
+                        ? Row::fromValuesWithStyle($nilai, $this->gayaTerlambat())
+                        : Row::fromValues($nilai),
+                );
             }
         });
     }
@@ -136,6 +147,13 @@ class TulisExcelLaporanAction
         return (new Style)
             ->withFontBold(true)
             ->withBackgroundColor(Color::rgb(219, 219, 219));
+    }
+
+    private function gayaTerlambat(): Style
+    {
+        return (new Style)
+            ->withFontColor(Color::rgb(153, 27, 27))
+            ->withBackgroundColor(Color::rgb(254, 226, 226));
     }
 
     /**

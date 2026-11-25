@@ -56,7 +56,7 @@ it('builds the H/DL/C/S/A matrix for every pegawai', function () {
 
     expect($hasil['hari'])->toBe(range(1, 30))
         ->and($barisA['sel'][1])->toBeNull()   // Minggu
-        ->and($barisA['sel'][2])->toBe('H')
+        ->and($barisA['sel'][2])->toBe('H!')
         ->and($barisA['sel'][3])->toBe('C')
         ->and($barisA['sel'][4])->toBe('DL')
         ->and($barisA['sel'][5])->toBe('S')
@@ -67,6 +67,7 @@ it('builds the H/DL/C/S/A matrix for every pegawai', function () {
         ->and($barisA['c'])->toBe(1)
         ->and($barisA['s'])->toBe(1)
         ->and($barisA['a'])->toBe(17)          // 21 hari kerja - 4 baris
+        ->and($barisA['tl'])->toBe(1)
         ->and($barisB['h'])->toBe(0)
         ->and($barisB['a'])->toBe(21);
 });

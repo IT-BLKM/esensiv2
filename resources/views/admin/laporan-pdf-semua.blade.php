@@ -15,6 +15,7 @@
         table.data th, table.data td { border: 1px solid #6b7280; padding: 1px 2px; text-align: center; vertical-align: middle; }
         table.data th { background: #e5e7eb; font-size: 6px; }
         table.data td { font-size: 6px; }
+        table.data tr.terlambat td { color: #991b1b; background: #fef2f2; }
         .nama { text-align: left; width: 16%; }
         .nip { text-align: left; width: 8%; }
         .ringkas { width: 3%; font-weight: bold; }
@@ -47,6 +48,7 @@
                 <th rowspan="2" class="ringkas">C</th>
                 <th rowspan="2" class="ringkas">S</th>
                 <th rowspan="2" class="ringkas">A</th>
+                <th rowspan="2" class="ringkas">TL</th>
             </tr>
             <tr>
                 @foreach ($data['hari'] as $hari)
@@ -56,7 +58,7 @@
         </thead>
         <tbody>
             @foreach ($data['baris'] as $item)
-                <tr>
+                <tr @if ($item['tl'] > 0) class="terlambat" @endif>
                     <td class="nip">{{ $item['nip'] }}</td>
                     <td class="nama">{{ $item['nama'] }}</td>
                     @foreach ($data['hari'] as $hari)
@@ -67,13 +69,14 @@
                     <td class="ringkas">{{ $item['c'] }}</td>
                     <td class="ringkas">{{ $item['s'] }}</td>
                     <td class="ringkas">{{ $item['a'] }}</td>
+                    <td class="ringkas">{{ $item['tl'] }}</td>
                 </tr>
             @endforeach
         </tbody>
     </table>
 
     <div class="footer">
-        Kode: H = hadir, DL = dinas luar, C = cuti, S = sakit, A = alpa. Sel kosong = hari tanpa shift.<br>
+        Kode: H = hadir, H! = hadir terlambat, DL = dinas luar, C = cuti, S = sakit, A = alpa, TL = hari terlambat. Sel kosong = hari tanpa shift.<br>
         Tanggal Cetak: {{ \Carbon\CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'))->format('d-m-Y') }}
         · Dicetak oleh: {{ auth()->user()?->nama ?? 'Administrator' }}
     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Laporan;
 
+use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
 use App\Models\Presensi;
@@ -15,11 +16,15 @@ use Illuminate\Support\Facades\Gate;
  * Matriks rekap semua pegawai untuk satu bulan.
  *
  * Kode sel mengikuti ringkasan yang dipakai laporan lama:
- * H = hadir, DL = dinas luar, C = cuti, S = sakit, A = alpa.
- * Sel kosong berarti hari tanpa shift (akhir pekan/libur).
+ * H = hadir, H! = hadir terlambat, DL = dinas luar, C = cuti, S = sakit,
+ * A = alpa. Sel kosong berarti hari tanpa shift (akhir pekan/libur).
  */
 class LaporanSemuaPegawaiAction
 {
+    public function __construct(
+        private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
+    ) {}
+
     /**
      * @return array{
      *     labelPeriode: string,
@@ -33,7 +38,8 @@ class LaporanSemuaPegawaiAction
      *         dl: int,
      *         c: int,
      *         s: int,
-     *         a: int
+     *         a: int,
+     *         tl: int
      *     }>
      * }
      */
@@ -52,8 +58,9 @@ class LaporanSemuaPegawaiAction
             ->get(['id', 'nip', 'nama']);
 
         $presensi = Presensi::query()
+            ->with(['jamKerja', 'pengajuan'])
             ->whereBetween('tgl_presensi', [$awal->toDateString(), $akhir->toDateString()])
-            ->get(['id_pegawai', 'tgl_presensi', 'status'])
+            ->get(['id_pegawai', 'id_jam_kerja', 'id_pengajuan', 'tgl_presensi', 'jam_masuk', 'status'])
             ->groupBy('id_pegawai');
 
         $baris = [];
@@ -67,7 +74,7 @@ class LaporanSemuaPegawaiAction
                 ->all();
 
             $sel = [];
-            $hitung = ['H' => 0, 'DL' => 0, 'C' => 0, 'S' => 0, 'A' => 0];
+            $hitung = ['H' => 0, 'DL' => 0, 'C' => 0, 'S' => 0, 'A' => 0, 'TL' => 0];
 
             for ($hari = 1; $hari <= $jumlahHari; $hari++) {
                 $tanggal = $awal->setDay($hari);
@@ -75,6 +82,11 @@ class LaporanSemuaPegawaiAction
 
                 if ($presensiHari !== null) {
                     $kode = $this->kodeStatus($presensiHari->status);
+
+                    if ($kode === 'H' && ($this->hitungMenitTerlambat)($presensiHari) > 0) {
+                        $kode = 'H!';
+                        $hitung['TL']++;
+                    }
                 } elseif ($this->hariKerja($tanggal, $hariKerja)) {
                     $kode = 'A';
                 } else {
@@ -84,7 +96,8 @@ class LaporanSemuaPegawaiAction
                 $sel[$hari] = $kode;
 
                 if ($kode !== null) {
-                    $hitung[$kode] = ($hitung[$kode] ?? 0) + 1;
+                    $kunci = $kode === 'H!' ? 'H' : $kode;
+                    $hitung[$kunci] = ($hitung[$kunci] ?? 0) + 1;
                 }
             }
 
@@ -98,6 +111,7 @@ class LaporanSemuaPegawaiAction
                 'c' => $hitung['C'],
                 's' => $hitung['S'],
                 'a' => $hitung['A'],
+                'tl' => $hitung['TL'],
             ];
         }
 
