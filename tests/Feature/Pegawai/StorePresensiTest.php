@@ -4,6 +4,7 @@ use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
+use App\Models\PenggantianKeterlambatan;
 use App\Models\Presensi;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -449,4 +450,79 @@ it('refuses attendance when a full day dinas luar row already exists', function 
         ->assertJsonPath('type', 'status');
 
     expect(Presensi::query()->count())->toBe(1);
+});
+
+it('records a fulfilled replacement snapshot when checkout is inside the window', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 07:50:00', 'Asia/Jakarta'));
+    $this->actingAs($user)->postJson(route('presensi.store'), payloadStorePresensi())->assertCreated();
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 16:22:00', 'Asia/Jakarta'));
+    $this->actingAs($user)->postJson(route('presensi.store'), payloadStorePresensi('keluar'))->assertOk();
+
+    $ganti = PenggantianKeterlambatan::query()->sole();
+
+    expect($ganti->menit_terlambat)->toBe(20)
+        ->and($ganti->target_pulang)->toBe('16:20:00')
+        ->and($ganti->batas_pulang)->toBe('16:25:00')
+        ->and($ganti->menit_diganti)->toBe(22)
+        ->and($ganti->bisa_diganti)->toBeTrue()
+        ->and($ganti->terpenuhi)->toBeTrue();
+});
+
+it('records an unfulfilled snapshot when checkout misses the replacement window', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 07:50:00', 'Asia/Jakarta'));
+    $this->actingAs($user)->postJson(route('presensi.store'), payloadStorePresensi())->assertCreated();
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 16:26:00', 'Asia/Jakarta'));
+    $this->actingAs($user)->postJson(route('presensi.store'), payloadStorePresensi('keluar'))->assertOk();
+
+    $ganti = PenggantianKeterlambatan::query()->sole();
+
+    expect($ganti->terpenuhi)->toBeFalse()
+        ->and($ganti->menit_diganti)->toBe(26)
+        ->and($ganti->catatan)->toContain('melewati batas');
+});
+
+it('marks lateness over thirty minutes as not replaceable', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 08:01:00', 'Asia/Jakarta'));
+    $this->actingAs($user)->postJson(route('presensi.store'), payloadStorePresensi())->assertCreated();
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 16:31:00', 'Asia/Jakarta'));
+    $this->actingAs($user)->postJson(route('presensi.store'), payloadStorePresensi('keluar'))->assertOk();
+
+    $ganti = PenggantianKeterlambatan::query()->sole();
+
+    expect($ganti->menit_terlambat)->toBe(31)
+        ->and($ganti->bisa_diganti)->toBeFalse()
+        ->and($ganti->target_pulang)->toBeNull()
+        ->and($ganti->batas_pulang)->toBeNull()
+        ->and($ganti->terpenuhi)->toBeFalse();
+});
+
+it('uses friday shift end for the replacement window', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    $shift = shiftStorePresensi();
+    $shift->update(['jam_pulang' => '16:30:00']);
+    jadwalkanStorePresensi($pegawai, $shift, 'Jumat');
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-27 07:50:00', 'Asia/Jakarta'));
+    $this->actingAs($user)->postJson(route('presensi.store'), payloadStorePresensi())->assertCreated();
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-27 16:50:00', 'Asia/Jakarta'));
+    $this->actingAs($user)->postJson(route('presensi.store'), payloadStorePresensi('keluar'))->assertOk();
+
+    $ganti = PenggantianKeterlambatan::query()->sole();
+
+    expect($ganti->target_pulang)->toBe('16:50:00')
+        ->and($ganti->batas_pulang)->toBe('16:55:00')
+        ->and($ganti->terpenuhi)->toBeTrue();
 });

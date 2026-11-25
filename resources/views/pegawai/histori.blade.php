@@ -96,7 +96,29 @@
                                 <x-table.td align="right">
                                     @if ($baris['status'] === 'hadir')
                                         @if ($baris['menitTerlambat'] > 0)
-                                            <x-badge variant="warning">Terlambat {{ $baris['menitTerlambat'] }} menit</x-badge>
+                                            @php
+                                                $penggantian = $baris['penggantian'] ?? null;
+                                                $formatJamGanti = fn (?string $jam): ?string => $jam === null
+                                                    ? null
+                                                    : \Illuminate\Support\Carbon::parse($jam)->format('H:i');
+                                            @endphp
+
+                                            @if ($penggantian === null)
+                                                <x-badge variant="warning">Terlambat {{ $baris['menitTerlambat'] }} menit</x-badge>
+                                            @elseif (! $penggantian['bisaDiganti'])
+                                                <x-badge variant="danger">Terlambat {{ $baris['menitTerlambat'] }} menit — tidak bisa diganti</x-badge>
+                                            @elseif ($penggantian['terpenuhi'])
+                                                <x-badge variant="success">Terlambat {{ $baris['menitTerlambat'] }} menit — diganti</x-badge>
+                                                <span class="mt-1 block text-xs text-gray-600">
+                                                    Pulang {{ $formatJamGanti($penggantian['jamSelesai']) }} (jendela
+                                                    {{ $formatJamGanti($penggantian['targetPulang']) }}–{{ $formatJamGanti($penggantian['batasPulang']) }})
+                                                </span>
+                                            @else
+                                                <x-badge variant="warning">Terlambat {{ $baris['menitTerlambat'] }} menit — belum diganti</x-badge>
+                                                <span class="mt-1 block text-xs text-gray-600">
+                                                    Target pulang {{ $formatJamGanti($penggantian['targetPulang']) }}–{{ $formatJamGanti($penggantian['batasPulang']) }}
+                                                </span>
+                                            @endif
                                         @else
                                             <span class="text-gray-600">Tepat waktu</span>
                                         @endif

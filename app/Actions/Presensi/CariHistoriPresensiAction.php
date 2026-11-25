@@ -11,6 +11,7 @@ class CariHistoriPresensiAction
 {
     public function __construct(
         private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
+        private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
     ) {}
 
     /**
@@ -30,7 +31,8 @@ class CariHistoriPresensiAction
      *     shift: string|null,
      *     jamMasuk: string|null,
      *     jamKeluar: string|null,
-     *     menitTerlambat: int
+     *     menitTerlambat: int,
+     *     penggantian: array<string, mixed>|null
      * }>
      */
     public function __invoke(Pegawai $pegawai, int $bulan, int $tahun): array
@@ -40,7 +42,7 @@ class CariHistoriPresensiAction
         $akhirBulan = $awalBulan->endOfMonth();
 
         return Presensi::query()
-            ->with(['jamKerja', 'pengajuan'])
+            ->with(['jamKerja', 'pengajuan', 'penggantianKeterlambatan'])
             ->where('id_pegawai', $pegawai->id)
             ->whereBetween('tgl_presensi', [$awalBulan->toDateString(), $akhirBulan->toDateString()])
             ->orderByDesc('tgl_presensi')
@@ -60,6 +62,7 @@ class CariHistoriPresensiAction
                     'jamMasuk' => $this->formatJam($presensi->jam_masuk),
                     'jamKeluar' => $this->formatJam($presensi->jam_keluar),
                     'menitTerlambat' => ($this->hitungMenitTerlambat)($presensi),
+                    'penggantian' => ($this->hitungPenggantian)($presensi),
                 ];
             })
             ->values()

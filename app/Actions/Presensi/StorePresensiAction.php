@@ -7,6 +7,7 @@ use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
+use App\Models\PenggantianKeterlambatan;
 use App\Models\Presensi;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -20,6 +21,7 @@ class StorePresensiAction
 {
     public function __construct(
         private readonly CariPengajuanDlHariIniAction $cariDlHariIni,
+        private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
     ) {}
 
     /**
@@ -146,7 +148,11 @@ class StorePresensiAction
                     'koordinat_keluar' => $koordinat['teks'],
                 ]);
 
-                return $presensi->refresh();
+                $presensi->refresh();
+
+                $this->simpanPenggantianKeterlambatan($presensi, $shift);
+
+                return $presensi;
             });
         } catch (Throwable $error) {
             if (is_string($pathFoto)) {
@@ -173,6 +179,35 @@ class StorePresensiAction
             'jenis' => $jenis,
             'presensi' => $presensi,
         ];
+    }
+
+    /**
+     * Simpan snapshot penggantian otomatis setelah absen pulang. Baris lama
+     * tanpa snapshot tetap dihitung langsung dari jam masuk/keluar.
+     */
+    private function simpanPenggantianKeterlambatan(Presensi $presensi, JamKerja $shift): void
+    {
+        $hasil = ($this->hitungPenggantian)($presensi, $shift);
+
+        if ($hasil === null || $hasil['jamSelesai'] === null) {
+            return;
+        }
+
+        PenggantianKeterlambatan::query()->updateOrCreate(
+            ['id_presensi' => $presensi->id],
+            [
+                'tanggal' => $hasil['tanggal'],
+                'jam_mulai' => $hasil['jamMulai'],
+                'jam_selesai' => $hasil['jamSelesai'],
+                'target_pulang' => $hasil['targetPulang'],
+                'batas_pulang' => $hasil['batasPulang'],
+                'menit_terlambat' => $hasil['menitTerlambat'],
+                'menit_diganti' => $hasil['menitDiganti'],
+                'bisa_diganti' => $hasil['bisaDiganti'],
+                'terpenuhi' => $hasil['terpenuhi'],
+                'catatan' => $hasil['catatan'],
+            ],
+        );
     }
 
     private function shiftHariIni(Pegawai $pegawai, CarbonInterface $sekarang): JamKerja

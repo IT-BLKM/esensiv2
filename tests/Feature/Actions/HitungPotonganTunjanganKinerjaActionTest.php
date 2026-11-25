@@ -232,3 +232,76 @@ it('ignores rows outside the requested year', function () {
         ->and($hasil['ringkasan']['jumlahHari'])->toBe(1)
         ->and($hasil['ringkasan']['totalPersen'])->toBe(1.0);
 });
+
+it('removes the lateness deduction when the same-day replacement window is met', function () {
+    $pegawai = Pegawai::factory()->create();
+    $shift = shiftTunjangan();
+    $tanggal = '2026-11-02';
+
+    presensiTunjangan($pegawai, $shift, $tanggal, '07:50:00', '16:22:00');
+
+    $hasil = app(HitungPotonganTunjanganKinerjaAction::class)(
+        $pegawai,
+        CarbonImmutable::parse($tanggal),
+        CarbonImmutable::parse($tanggal),
+    );
+
+    expect($hasil['baris'][0]['levelTl'])->toBeNull()
+        ->and($hasil['baris'][0]['persenTl'])->toBe(0.0)
+        ->and($hasil['baris'][0]['penggantianTerpenuhi'])->toBeTrue()
+        ->and($hasil['baris'][0]['menitDiganti'])->toBe(22)
+        ->and($hasil['ringkasan']['jumlahPenggantian'])->toBe(1)
+        ->and($hasil['ringkasan']['totalMenitDiganti'])->toBe(22);
+});
+
+it('keeps the lateness deduction when checkout misses the replacement window', function () {
+    $pegawai = Pegawai::factory()->create();
+    $shift = shiftTunjangan();
+    $tanggal = '2026-11-03';
+
+    presensiTunjangan($pegawai, $shift, $tanggal, '07:50:00', '16:26:00');
+
+    $hasil = app(HitungPotonganTunjanganKinerjaAction::class)(
+        $pegawai,
+        CarbonImmutable::parse($tanggal),
+        CarbonImmutable::parse($tanggal),
+    );
+
+    expect($hasil['baris'][0]['levelTl'])->toBe('TL1')
+        ->and($hasil['baris'][0]['persenTl'])->toBe(1.0)
+        ->and($hasil['baris'][0]['penggantianTerpenuhi'])->toBeFalse()
+        ->and($hasil['ringkasan']['jumlahPenggantian'])->toBe(0);
+});
+
+it('does not replace lateness over thirty minutes', function () {
+    $pegawai = Pegawai::factory()->create();
+    $shift = shiftTunjangan();
+    $tanggal = '2026-11-04';
+
+    presensiTunjangan($pegawai, $shift, $tanggal, '08:01:00', '16:40:00');
+
+    $hasil = app(HitungPotonganTunjanganKinerjaAction::class)(
+        $pegawai,
+        CarbonImmutable::parse($tanggal),
+        CarbonImmutable::parse($tanggal),
+    );
+
+    expect($hasil['baris'][0]['levelTl'])->toBe('TL2')
+        ->and($hasil['baris'][0]['bisaDiganti'])->toBeFalse()
+        ->and($hasil['baris'][0]['penggantianTerpenuhi'])->toBeFalse();
+});
+
+it('accumulates only unreplaced lateness in the monthly percentage', function () {
+    $pegawai = Pegawai::factory()->create();
+    $shift = shiftTunjangan();
+
+    presensiTunjangan($pegawai, $shift, '2026-11-02', '07:50:00', '16:22:00');
+    presensiTunjangan($pegawai, $shift, '2026-11-03', '07:50:00', '16:26:00');
+
+    $hasil = app(HitungPotonganTunjanganKinerjaAction::class)->bulanan($pegawai, 2026, 11);
+
+    expect($hasil['ringkasan']['jumlahPenggantian'])->toBe(1)
+        ->and($hasil['ringkasan']['totalMenitDiganti'])->toBe(22)
+        ->and($hasil['ringkasan']['totalPersenTl'])->toBe(1.0)
+        ->and($hasil['ringkasan']['totalPersen'])->toBe(1.0);
+});

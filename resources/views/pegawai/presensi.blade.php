@@ -127,6 +127,40 @@
                         </dl>
                     @endif
 
+                    @php
+                        $penggantian = $hariIni['penggantian'] ?? null;
+                        $formatJamGanti = fn (?string $jam): ?string => $jam === null
+                            ? null
+                            : \Illuminate\Support\Carbon::parse($jam)->format('H:i');
+                    @endphp
+
+                    @if ($penggantian !== null && $jamMasuk !== null)
+                        @if (! $penggantian['bisaDiganti'])
+                            <x-alert variant="danger" title="Tidak bisa diganti">
+                                Terlambat {{ $penggantian['menitTerlambat'] }} menit — melebihi batas 30 menit.
+                                Potongan keterlambatan tetap dihitung sesuai tingkat TL.
+                            </x-alert>
+                        @elseif ($penggantian['terpenuhi'])
+                            <x-alert variant="success" title="Keterlambatan sudah diganti">
+                                Terlambat {{ $penggantian['menitTerlambat'] }} menit dan pulang pukul
+                                {{ $formatJamGanti($penggantian['jamSelesai']) }}. Potongan TL tidak berlaku.
+                            </x-alert>
+                        @elseif ($jamKeluar === null)
+                            <x-alert variant="warning" title="Absen pulang pengganti">
+                                Terlambat {{ $penggantian['menitTerlambat'] }} menit. Absen pulang antara
+                                <strong>{{ $formatJamGanti($penggantian['targetPulang']) }}</strong>–
+                                <strong>{{ $formatJamGanti($penggantian['batasPulang']) }}</strong>
+                                agar keterlambatan tidak dipotong.
+                            </x-alert>
+                        @else
+                            <x-alert variant="warning" title="Penggantian belum terpenuhi">
+                                Pulang pukul {{ $formatJamGanti($penggantian['jamSelesai']) }} belum berada di
+                                jendela {{ $formatJamGanti($penggantian['targetPulang']) }}–
+                                {{ $formatJamGanti($penggantian['batasPulang']) }}. Potongan TL tetap dihitung.
+                            </x-alert>
+                        @endif
+                    @endif
+
                     @if ($jamMasuk !== null || $jamKeluar !== null)
                         <dl class="flex flex-col divide-y divide-gray-100 text-sm">
                             <div class="flex items-center justify-between gap-4 pb-2">
