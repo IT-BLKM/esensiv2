@@ -3,6 +3,7 @@
 namespace App\Actions\Laporan;
 
 use App\Actions\Presensi\HitungMenitTerlambatAction;
+use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -16,6 +17,7 @@ class RekapKehadiranAction
 {
     public function __construct(
         private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
+        private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
     ) {}
 
     /**
@@ -88,7 +90,7 @@ class RekapKehadiranAction
         $kodeDiabaikan = $this->kodeJamKerjaDiabaikan();
 
         $presensiTahun = Presensi::query()
-            ->with(['jamKerja', 'pengajuan'])
+            ->with(['jamKerja', 'pengajuan', 'penggantianKeterlambatan'])
             ->where('id_pegawai', $pegawai->id)
             ->whereBetween('tgl_presensi', [
                 $sekarang->startOfYear()->toDateString(),
@@ -138,7 +140,7 @@ class RekapKehadiranAction
         $sekarang = $this->sekarang();
 
         $presensi = Presensi::query()
-            ->with(['jamKerja', 'pengajuan'])
+            ->with(['jamKerja', 'pengajuan', 'penggantianKeterlambatan'])
             ->where('id_pegawai', $pegawai->id)
             ->where('tgl_presensi', $sekarang->toDateString())
             ->first();
@@ -341,6 +343,7 @@ class RekapKehadiranAction
             'jamKeluar' => $this->formatJam($presensi?->jam_keluar),
             'menitTerlambat' => $menitTerlambat,
             'terlambat' => $menitTerlambat > 0,
+            'penggantian' => $presensi === null ? null : ($this->hitungPenggantian)($presensi),
         ];
     }
 

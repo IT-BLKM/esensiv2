@@ -3,6 +3,7 @@
 namespace App\Actions\Laporan;
 
 use App\Actions\Presensi\HitungMenitTerlambatAction;
+use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\Presensi;
@@ -18,9 +19,10 @@ use Illuminate\Support\Collection;
  * tingkat PSW. Persentase dijumlahkan per periode; nominal rupiah belum
  * dihitung karena master tunjangan belum ada.
  *
- * Frasa "bila tidak mengganti waktu keterlambatan" belum punya mekanisme
- * penggantian di aplikasi ini, jadi potongan TL selalu berlaku. PSW dihitung
- * otomatis dari `jam_keluar` terhadap `jam_pulang` shift.
+ * Frasa "bila tidak mengganti waktu keterlambatan" dijalankan lewat
+ * HitungPenggantianKeterlambatanAction: TL 0 bila pegawai memenuhi jendela
+ * pulang pengganti pada hari yang sama. PSW dihitung otomatis dari
+ * `jam_keluar` terhadap `jam_pulang` shift.
  */
 class HitungPotonganTunjanganKinerjaAction
 {
@@ -30,6 +32,7 @@ class HitungPotonganTunjanganKinerjaAction
 
     public function __construct(
         private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
+        private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
     ) {}
 
     /**
@@ -41,6 +44,12 @@ class HitungPotonganTunjanganKinerjaAction
      *         menitTerlambat: int|null,
      *         levelTl: string|null,
      *         persenTl: float,
+     *         menitDiganti: int,
+     *         bisaDiganti: bool,
+     *         penggantianTerpenuhi: bool,
+     *         targetPulang: string|null,
+     *         batasPulang: string|null,
+     *         catatanPenggantian: string|null,
      *         menitPulangCepat: int|null,
      *         levelPsw: string|null,
      *         persenPsw: float,
@@ -55,7 +64,9 @@ class HitungPotonganTunjanganKinerjaAction
      *         jumlahPsw2: int,
      *         jumlahPsw3: int,
      *         jumlahPsw4: int,
+     *         jumlahPenggantian: int,
      *         totalMenitTerlambat: int,
+     *         totalMenitDiganti: int,
      *         totalMenitPulangCepat: int,
      *         totalPersenTl: float,
      *         totalPersenPsw: float,
@@ -69,7 +80,7 @@ class HitungPotonganTunjanganKinerjaAction
         $selesai = CarbonImmutable::parse($selesai->format('Y-m-d'))->startOfDay();
 
         $presensi = Presensi::query()
-            ->with(['jamKerja', 'pengajuan'])
+            ->with(['jamKerja', 'pengajuan', 'penggantianKeterlambatan'])
             ->where('id_pegawai', $pegawai->id)
             ->whereBetween('tgl_presensi', [$mulai->toDateString(), $selesai->toDateString()])
             ->orderBy('tgl_presensi')
@@ -119,6 +130,12 @@ class HitungPotonganTunjanganKinerjaAction
      *         menitTerlambat: int|null,
      *         levelTl: string|null,
      *         persenTl: float,
+     *         menitDiganti: int,
+     *         bisaDiganti: bool,
+     *         penggantianTerpenuhi: bool,
+     *         targetPulang: string|null,
+     *         batasPulang: string|null,
+     *         catatanPenggantian: string|null,
      *         menitPulangCepat: int|null,
      *         levelPsw: string|null,
      *         persenPsw: float,
@@ -133,7 +150,9 @@ class HitungPotonganTunjanganKinerjaAction
      *         jumlahPsw2: int,
      *         jumlahPsw3: int,
      *         jumlahPsw4: int,
+     *         jumlahPenggantian: int,
      *         totalMenitTerlambat: int,
+     *         totalMenitDiganti: int,
      *         totalMenitPulangCepat: int,
      *         totalPersenTl: float,
      *         totalPersenPsw: float,
@@ -155,6 +174,8 @@ class HitungPotonganTunjanganKinerjaAction
         ];
         $totalMenitTerlambat = 0;
         $totalMenitPulangCepat = 0;
+        $jumlahPenggantian = 0;
+        $totalMenitDiganti = 0;
 
         foreach ($presensi as $item) {
             $hasil = $this->hitungBaris($item);
@@ -173,6 +194,11 @@ class HitungPotonganTunjanganKinerjaAction
 
             $totalMenitTerlambat += $hasil['menitTerlambat'] ?? 0;
             $totalMenitPulangCepat += $hasil['menitPulangCepat'] ?? 0;
+
+            if ($hasil['penggantianTerpenuhi']) {
+                $jumlahPenggantian++;
+                $totalMenitDiganti += $hasil['menitDiganti'];
+            }
 
             $baris[] = $hasil;
         }
@@ -193,7 +219,9 @@ class HitungPotonganTunjanganKinerjaAction
                 'jumlahPsw2' => $jumlah['PSW2'],
                 'jumlahPsw3' => $jumlah['PSW3'],
                 'jumlahPsw4' => $jumlah['PSW4'],
+                'jumlahPenggantian' => $jumlahPenggantian,
                 'totalMenitTerlambat' => $totalMenitTerlambat,
+                'totalMenitDiganti' => $totalMenitDiganti,
                 'totalMenitPulangCepat' => $totalMenitPulangCepat,
                 'totalPersenTl' => $totalPersenTl,
                 'totalPersenPsw' => $totalPersenPsw,
@@ -230,7 +258,8 @@ class HitungPotonganTunjanganKinerjaAction
             return null;
         }
 
-        [$levelTl, $menitTerlambat] = $this->keterlambatan($presensi);
+        $penggantian = ($this->hitungPenggantian)($presensi);
+        [$levelTl, $menitTerlambat] = $this->keterlambatan($presensi, $penggantian);
         [$levelPsw, $menitPulangCepat] = $this->pulangCepat($presensi, $shift->jam_pulang);
 
         return [
@@ -238,6 +267,12 @@ class HitungPotonganTunjanganKinerjaAction
             'menitTerlambat' => $menitTerlambat,
             'levelTl' => $levelTl,
             'persenTl' => $levelTl === null ? 0.0 : $this->persenUntuk('keterlambatan', $levelTl),
+            'menitDiganti' => $penggantian['menitDiganti'] ?? 0,
+            'bisaDiganti' => $penggantian['bisaDiganti'] ?? false,
+            'penggantianTerpenuhi' => $penggantian['terpenuhi'] ?? false,
+            'targetPulang' => $penggantian['targetPulang'] ?? null,
+            'batasPulang' => $penggantian['batasPulang'] ?? null,
+            'catatanPenggantian' => $penggantian['catatan'] ?? null,
             'menitPulangCepat' => $menitPulangCepat,
             'levelPsw' => $levelPsw,
             'persenPsw' => $levelPsw === null ? 0.0 : $this->persenUntuk('pulang_cepat', $levelPsw),
@@ -252,7 +287,11 @@ class HitungPotonganTunjanganKinerjaAction
     /**
      * @return array{0: string|null, 1: int|null}
      */
-    private function keterlambatan(Presensi $presensi): array
+    /**
+     * @param  array<string, mixed>|null  $penggantian
+     * @return array{0: string|null, 1: int|null}
+     */
+    private function keterlambatan(Presensi $presensi, ?array $penggantian): array
     {
         // Hadir tanpa jam masuk dianggap tidak mengisi daftar hadir masuk.
         if ($presensi->jam_masuk === null) {
@@ -263,6 +302,11 @@ class HitungPotonganTunjanganKinerjaAction
 
         if ($menit <= 0) {
             return [null, 0];
+        }
+
+        // Penggantian hari yang sama yang memenuhi jendela menghapus TL.
+        if (($penggantian['terpenuhi'] ?? false) === true) {
+            return [null, $menit];
         }
 
         return [$this->tingkat('keterlambatan', $menit)['level'] ?? null, $menit];

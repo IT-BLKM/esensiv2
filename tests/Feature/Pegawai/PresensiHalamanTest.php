@@ -239,3 +239,53 @@ it('shows half day dinas luar state before and after the single check in', funct
         ->assertSee('DL setengah selesai')
         ->assertSee('Tidak perlu absen pulang');
 });
+
+it('shows the replacement window after a late check-in', function () {
+    [$user, $pegawai] = akunHalamanPresensi();
+    $shift = shiftHalamanPresensi();
+    jadwalkanHalamanPresensi($pegawai, $shift);
+    buatPresensiHalamanPresensi($pegawai, [
+        'id_jam_kerja' => $shift->id,
+        'jam_masuk' => '07:50:00',
+        'jam_keluar' => null,
+    ]);
+
+    $this->actingAs($user)->get(route('presensi.index'))
+        ->assertOk()
+        ->assertSee('Absen pulang pengganti')
+        ->assertSee('16:20')
+        ->assertSee('16:25')
+        ->assertSee('agar keterlambatan tidak dipotong');
+});
+
+it('shows that the replacement is fulfilled after a qualifying checkout', function () {
+    [$user, $pegawai] = akunHalamanPresensi();
+    $shift = shiftHalamanPresensi();
+    jadwalkanHalamanPresensi($pegawai, $shift);
+    buatPresensiHalamanPresensi($pegawai, [
+        'id_jam_kerja' => $shift->id,
+        'jam_masuk' => '07:50:00',
+        'jam_keluar' => '16:22:00',
+    ]);
+
+    $this->actingAs($user)->get(route('presensi.index'))
+        ->assertOk()
+        ->assertSee('Keterlambatan sudah diganti')
+        ->assertSee('Potongan TL tidak berlaku');
+});
+
+it('shows that lateness over thirty minutes cannot be replaced', function () {
+    [$user, $pegawai] = akunHalamanPresensi();
+    $shift = shiftHalamanPresensi();
+    jadwalkanHalamanPresensi($pegawai, $shift);
+    buatPresensiHalamanPresensi($pegawai, [
+        'id_jam_kerja' => $shift->id,
+        'jam_masuk' => '08:01:00',
+        'jam_keluar' => null,
+    ]);
+
+    $this->actingAs($user)->get(route('presensi.index'))
+        ->assertOk()
+        ->assertSee('Tidak bisa diganti')
+        ->assertSee('melebihi batas 30 menit');
+});

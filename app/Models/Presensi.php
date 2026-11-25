@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Presensi extends Model
 {
@@ -70,6 +71,14 @@ class Presensi extends Model
     public function pengajuan(): BelongsTo
     {
         return $this->belongsTo(Pengajuan::class, 'id_pengajuan');
+    }
+
+    /**
+     * Snapshot penggantian waktu keterlambatan (issue #109), bila sudah ada.
+     */
+    public function penggantianKeterlambatan(): HasOne
+    {
+        return $this->hasOne(PenggantianKeterlambatan::class, 'id_presensi');
     }
 
     /**

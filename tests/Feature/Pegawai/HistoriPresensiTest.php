@@ -188,3 +188,19 @@ it('warns when the account is not linked to pegawai data', function () {
 it('sends a guest to the login page', function () {
     $this->get(route('histori.index'))->assertRedirect(route('login'));
 });
+
+it('shows replacement status for late rows', function () {
+    [$user, $pegawai] = akunHistoriPresensi();
+    $shift = shiftHistoriPresensi();
+
+    buatHistoriPresensi($pegawai, '2026-11-02', shift: $shift, jamMasuk: '07:50:00', jamKeluar: '16:22:00');
+    buatHistoriPresensi($pegawai, '2026-11-03', shift: $shift, jamMasuk: '07:50:00', jamKeluar: '16:26:00');
+    buatHistoriPresensi($pegawai, '2026-11-04', shift: $shift, jamMasuk: '08:01:00', jamKeluar: '16:31:00');
+
+    $this->actingAs($user)->get(route('histori.index'))
+        ->assertOk()
+        ->assertSee('— diganti')
+        ->assertSee('— belum diganti')
+        ->assertSee('— tidak bisa diganti')
+        ->assertSee('16:20–16:25');
+});
