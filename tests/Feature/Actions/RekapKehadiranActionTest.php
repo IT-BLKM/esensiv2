@@ -223,3 +223,77 @@ it('does not count half day dinas luar as late', function () {
         ->and($rekap['bulanIni']['terlambat'])->toBe(0)
         ->and($rekap['bulanIni']['tepatWaktu'])->toBe(1);
 });
+
+it('recaps all employees monthly with the same per-pegawai numbers', function () {
+    $pegawaiA = Pegawai::factory()->create(['nama' => 'Budi Santoso']);
+    $pegawaiB = Pegawai::factory()->create(['nama' => 'Siti Aminah']);
+    $shift = shiftUntukRekap();
+
+    buatPresensiRekap($pegawaiA, '2026-11-02', 'hadir', $shift, '07:45:00');
+    buatPresensiRekap($pegawaiA, '2026-11-03', 'hadir', $shift, '08:15:00');
+    buatPresensiRekap($pegawaiA, '2026-11-04', 'cuti');
+    buatPresensiRekap($pegawaiB, '2026-11-02', 'hadir', $shift, '07:35:00');
+
+    $hasil = app(RekapKehadiranAction::class)->semuaBulanan(2026, 11);
+    $barisA = collect($hasil['baris'])->firstWhere('id', $pegawaiA->id);
+    $barisB = collect($hasil['baris'])->firstWhere('id', $pegawaiB->id);
+
+    expect($hasil['labelPeriode'])->toBe('November 2026')
+        ->and($barisA['hariTerlambat'])->toBe(2)
+        ->and($barisA['totalMenitTerlambat'])->toBe(60)
+        ->and($barisA['tepatWaktu'])->toBe(0)
+        ->and($barisA['cuti'])->toBe(1)
+        ->and($barisB['hariTerlambat'])->toBe(1)
+        ->and($barisB['totalMenitTerlambat'])->toBe(5)
+        ->and($hasil['ringkasan'])->toMatchArray([
+            'totalPegawai' => 2,
+            'pegawaiTerlambat' => 2,
+            'totalHariTerlambat' => 3,
+            'totalMenitTerlambat' => 65,
+            'totalMenitTerlambatTeks' => '1 jam 5 menit',
+        ]);
+});
+
+it('recaps all employees yearly and excludes other years', function () {
+    $pegawai = Pegawai::factory()->create();
+    $shift = shiftUntukRekap();
+
+    buatPresensiRekap($pegawai, '2026-01-15', 'hadir', $shift, '08:00:00');
+    buatPresensiRekap($pegawai, '2026-11-04', 'hadir', $shift, '07:45:00');
+    buatPresensiRekap($pegawai, '2025-12-31', 'hadir', $shift, '09:00:00');
+
+    $hasil = app(RekapKehadiranAction::class)->semuaTahunan(2026);
+
+    expect($hasil['baris'][0]['hariTerlambat'])->toBe(2)
+        ->and($hasil['baris'][0]['totalMenitTerlambat'])->toBe(45)
+        ->and($hasil['ringkasan']['totalMenitTerlambat'])->toBe(45)
+        ->and($hasil['ringkasan']['totalMenitTerlambatTeks'])->toBe('45 menit');
+});
+
+it('ignores excluded shifts in the all-employee recap', function () {
+    $pegawai = Pegawai::factory()->create();
+    $shift = shiftUntukRekap('JK03');
+
+    buatPresensiRekap($pegawai, '2026-11-04', 'hadir', $shift, '07:45:00');
+
+    $hasil = app(RekapKehadiranAction::class)->semuaBulanan(2026, 11);
+
+    expect($hasil['ringkasan']['pegawaiTerlambat'])->toBe(0)
+        ->and($hasil['ringkasan']['totalMenitTerlambat'])->toBe(0);
+});
+
+it('exposes per-pegawai monthly and yearly recap from the same service', function () {
+    $pegawai = Pegawai::factory()->create();
+    $shift = shiftUntukRekap();
+
+    buatPresensiRekap($pegawai, '2026-10-05', 'hadir', $shift, '08:00:00');
+    buatPresensiRekap($pegawai, '2026-11-02', 'hadir', $shift, '07:45:00');
+
+    $bulanan = app(RekapKehadiranAction::class)->pegawaiBulanan($pegawai, 2026, 11);
+    $tahunan = app(RekapKehadiranAction::class)->pegawaiTahunan($pegawai, 2026);
+
+    expect($bulanan['terlambat'])->toBe(1)
+        ->and($bulanan['totalMenitTerlambat'])->toBe(15)
+        ->and($tahunan['hariTerlambat'])->toBe(2)
+        ->and($tahunan['totalMenitTerlambat'])->toBe(45);
+});

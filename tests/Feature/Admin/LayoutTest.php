@@ -40,6 +40,7 @@ it('lists every admin menu entry as a named route', function (string $label, str
     'monitoring' => ['Monitoring', 'admin.monitoring.index'],
     'pengajuan' => ['Pengajuan', 'admin.pengajuan.index'],
     'laporan' => ['Laporan', 'admin.laporan.index'],
+    'rekap' => ['Rekap', 'admin.rekap.index'],
     'konfigurasi' => ['Konfigurasi', 'admin.konfigurasi.index'],
 ]);
 
@@ -66,6 +67,7 @@ it('renders every placeholder admin page inside the layout', function (string $n
     'monitoring' => ['admin.monitoring.index', 'Monitoring'],
     'pengajuan' => ['admin.pengajuan.index', 'Pengajuan'],
     'laporan' => ['admin.laporan.index', 'Laporan'],
+    'rekap' => ['admin.rekap.index', 'Rekap keterlambatan'],
     'konfigurasi' => ['admin.konfigurasi.index', 'Konfigurasi'],
 ]);
 
