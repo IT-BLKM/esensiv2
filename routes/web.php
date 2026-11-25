@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CutiController;
 use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
+use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\Admin\PengajuanController as PengajuanAdminController;
@@ -123,7 +124,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('cuti', CutiController::class)
             ->parameters(['cuti' => 'cuti'])
             ->except('show');
-        Route::get('/monitoring', fn () => view('admin.monitoring'))->name('monitoring.index');
+        Route::get('/monitoring', MonitoringController::class)->name('monitoring.index');
 
         /*
          * Panel pengajuan (issue #39): daftar/filter, detail, approve/reject,

@@ -86,3 +86,25 @@
     fill: var(--color-info-100);
     fill-opacity: 0.35;
 }
+
+/*
+ * Peta monitoring admin (issue #41). Marker masuk/pulang dibedakan lewat
+ * design token; garis menghubungkan koordinat masuk dan pulang pada baris
+ * yang sama.
+ */
+.peta-titik-masuk {
+    stroke: var(--color-brand-800);
+    fill: var(--color-brand-600);
+    fill-opacity: 1;
+}
+
+.peta-titik-keluar {
+    stroke: var(--color-accent-800);
+    fill: var(--color-accent-500);
+    fill-opacity: 1;
+}
+
+.peta-garis-perjalanan {
+    stroke: var(--color-info-600);
+    stroke-opacity: 0.7;
+}
