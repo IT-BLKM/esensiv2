@@ -63,7 +63,8 @@ class RekapKehadiranAction
      *         jamMasuk: string|null,
      *         jamKeluar: string|null,
      *         menitTerlambat: int,
-     *         terlambat: bool
+     *         terlambat: bool,
+     *         penggantian: array<string, mixed>|null
      *     },
      *     bulanIni: array{
      *         label: string,
@@ -132,7 +133,8 @@ class RekapKehadiranAction
      *     jamMasuk: string|null,
      *     jamKeluar: string|null,
      *     menitTerlambat: int,
-     *     terlambat: bool
+     *     terlambat: bool,
+     *     penggantian: array<string, mixed>|null
      * }
      */
     public function hariIni(Pegawai $pegawai): array
@@ -312,7 +314,8 @@ class RekapKehadiranAction
      *     jamMasuk: string|null,
      *     jamKeluar: string|null,
      *     menitTerlambat: int,
-     *     terlambat: bool
+     *     terlambat: bool,
+     *     penggantian: array<string, mixed>|null
      * }
      */
     private function ringkasHariIni(
