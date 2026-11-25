@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\Pegawai\DashboardController;
+use App\Http\Controllers\Pegawai\HistoriPresensiController;
 use App\Http\Controllers\Pegawai\LaporanController;
 use App\Http\Controllers\Pegawai\PengajuanController;
 use App\Http\Controllers\Pegawai\PresensiController;
@@ -42,7 +43,7 @@ Route::middleware('auth')->group(function () {
          */
         Route::post('/presensi', StorePresensiController::class)->name('presensi.store');
 
-        Route::get('/histori', fn () => view('pegawai.histori'))->name('histori.index');
+        Route::get('/histori', HistoriPresensiController::class)->name('histori.index');
         Route::get('/pengajuan', fn () => view('pegawai.pengajuan'))->name('pengajuan.index');
         Route::get('/profil', fn () => view('pegawai.profil'))->name('profil');
     });

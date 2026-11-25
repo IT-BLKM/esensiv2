@@ -2,6 +2,7 @@
 
 namespace App\Actions\Laporan;
 
+use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -13,17 +14,9 @@ use Illuminate\Support\Collection;
 
 class RekapKehadiranAction
 {
-    /**
-     * Label status sesuai enum `presensi.status`.
-     *
-     * @var array<string, string>
-     */
-    private const LABEL_STATUS = [
-        'hadir' => 'Hadir',
-        'cuti' => 'Cuti',
-        'sakit' => 'Sakit',
-        'dl' => 'Dinas Luar',
-    ];
+    public function __construct(
+        private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
+    ) {}
 
     /**
      * Nama bulan Indonesia. Tidak memakai locale Carbon supaya tampilan
@@ -270,35 +263,15 @@ class RekapKehadiranAction
     }
 
     /**
-     * Menit keterlambatan satu baris presensi. Nol berarti tidak terlambat
-     * atau tidak bisa dihitung (bukan hadir, tanpa jam masuk, tanpa shift,
-     * atau shift yang dikecualikan lewat config).
+     * Menit keterlambatan satu baris presensi. Perhitungan aslinya ada di
+     * HitungMenitTerlambatAction agar dipakai bersama histori (#33) dan
+     * rekap semua pegawai (#44).
      *
      * @param  list<string>  $kodeDiabaikan
      */
     private function menitTerlambat(Presensi $presensi, array $kodeDiabaikan): int
     {
-        if ($presensi->status !== 'hadir' || $presensi->jam_masuk === null) {
-            return 0;
-        }
-
-        $shift = $presensi->jamKerja;
-
-        if ($shift === null || in_array($shift->kode, $kodeDiabaikan, true)) {
-            return 0;
-        }
-
-        $batasMasuk = Carbon::parse($shift->jam_masuk);
-        $jamMasuk = Carbon::parse($presensi->jam_masuk);
-        $selisihDetik = $jamMasuk->getTimestamp() - $batasMasuk->getTimestamp();
-
-        if ($selisihDetik <= 0) {
-            return 0;
-        }
-
-        // Dibulatkan ke atas: terlambat 30 detik tetap tercatat 1 menit,
-        // supaya jumlah hari terlambat dan total menit tidak saling bertentangan.
-        return (int) ceil($selisihDetik / 60);
+        return ($this->hitungMenitTerlambat)($presensi, $kodeDiabaikan);
     }
 
     /**
@@ -363,7 +336,7 @@ class RekapKehadiranAction
             'status' => $presensi?->status,
             'statusLabel' => $presensi === null
                 ? null
-                : (self::LABEL_STATUS[$presensi->status] ?? ucfirst($presensi->status)),
+                : (Presensi::LABEL_STATUS[$presensi->status] ?? ucfirst($presensi->status)),
             'jamMasuk' => $this->formatJam($presensi?->jam_masuk),
             'jamKeluar' => $this->formatJam($presensi?->jam_keluar),
             'menitTerlambat' => $menitTerlambat,
