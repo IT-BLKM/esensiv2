@@ -10,9 +10,23 @@ Route::get('/', function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', fn () => 'Dashboard pegawai')
+    Route::get('/dashboard', fn () => view('pegawai.dashboard'))
         ->middleware('role:pegawai')
         ->name('dashboard');
+
+    /*
+     * Empat halaman isi bottom navigation pegawai (issue #24). Nama route-nya
+     * sudah bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13):
+     * tiap issue fitur (#31 #33 #36 #38) mengganti closure ini dengan
+     * controller sendiri, nama route tidak berubah sehingga tautan
+     * bottom nav tidak pernah rusak.
+     */
+    Route::middleware('role:pegawai')->group(function () {
+        Route::get('/presensi', fn () => view('pegawai.presensi'))->name('presensi.index');
+        Route::get('/histori', fn () => view('pegawai.histori'))->name('histori.index');
+        Route::get('/pengajuan', fn () => view('pegawai.pengajuan'))->name('pengajuan.index');
+        Route::get('/profil', fn () => view('pegawai.profil'))->name('profil');
+    });
 
     Route::get('/password', [PasswordController::class, 'edit'])->name('password.edit');
     Route::post('/password', [PasswordController::class, 'update'])->name('password.update');

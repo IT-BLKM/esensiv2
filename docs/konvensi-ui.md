@@ -104,8 +104,10 @@ Semua di `resources/views/components/`. Pakai komponen, jangan menyusun utility 
 | `x-alert` | `<x-alert variant="danger" title="Gagal">…</x-alert>` | Pesan sukses/info/peringatan/error |
 | `x-input` | `<x-input name="nip" invalid />` | `invalid` mengaktifkan gaya error |
 | `x-table` | lihat §5 | Bersama `x-table.th` / `x-table.td` |
-| `x-icon` | `<x-icon name="dashboard" />` | `dashboard` · `pegawai` · `departemen` · `cuti` · `monitoring` · `pengajuan` · `laporan` · `konfigurasi` · `user` · `menu` · `logout`; ukuran `sm` · `md` · `lg` |
-| `x-layouts.admin` | `<x-layouts.admin title="Pegawai">…</x-layouts.admin>` | Hanya untuk halaman admin — lihat §4.1 |
+| `x-icon` | `<x-icon name="dashboard" />` | `dashboard` · `pegawai` · `departemen` · `cuti` · `monitoring` · `presensi` · `histori` · `pengajuan` · `laporan` · `konfigurasi` · `user` · `menu` · `logout`; ukuran `sm` · `md` · `lg` |
+| `x-flash` | `<x-flash />` | Pesan sesi `success` · `warning` · `error` — dipakai kedua layout |
+| `x-layouts.admin` | `<x-layouts.admin title="Pegawai">…</x-layouts.admin>` | Halaman **admin** (desktop-first) — lihat §4.1 |
+| `x-layouts.pegawai` | `<x-layouts.pegawai title="Presensi">…</x-layouts.pegawai>` | Halaman **pegawai** (mobile-first, bottom nav) — lihat §4.1 |
 
 ### Menambah komponen baru
 
@@ -115,28 +117,49 @@ Semua di `resources/views/components/`. Pakai komponen, jangan menyusun utility 
 4. Tulis di tabel §4 dokumen ini.
 5. Buka PR — reviewer memastikan tidak ada hex literal dan tidak ada utility yang meniru komponen lain.
 
-### 4.1 Layout halaman admin
+### 4.1 Layout halaman
 
-Seluruh halaman admin dibungkus `<x-layouts.admin title="...">`
-(`resources/views/components/layouts/admin.blade.php`) yang menyediakan **header,
-sidebar menu, pesan sesi, dan footer**. Jangan menulis `<nav>`/`<header>` sendiri per halaman.
+Ada **dua** layout — dipilih sesuai peran, jangan dicampur dan jangan menulis `<nav>`/`<header>` sendiri per halaman.
+
+| Peran | Layout | Navigasi |
+|---|---|---|
+| **admin** | `<x-layouts.admin>` | sidebar di kiri (desktop-first) + header + footer |
+| **pegawai** | `<x-layouts.pegawai>` | **bottom navigation** lima menu (mobile-first) + header ringkas |
 
 ```blade
+{{-- admin --}}
 <x-layouts.admin title="Pegawai">
     <h1 class="text-xl font-semibold text-gray-900">Pegawai</h1>
     {{-- isi halaman --}}
 </x-layouts.admin>
+
+{{-- pegawai --}}
+<x-layouts.pegawai title="Presensi">
+    <h1 class="text-xl font-semibold text-gray-900">Presensi</h1>
+    {{-- isi halaman --}}
+</x-layouts.pegawai>
 ```
 
-- **Menu sidebar didefinisikan sekali**, di array `$menu` dalam layout. Menambah menu =
-  menambah **satu baris** di situ **dan** satu route dengan nama tersebut — tidak ada
-  tautan yang bisa menyalah.
-- Menu aktif ditandai otomatis dengan `aria-current="page"` lewat pola `admin.<menu>.*`,
-  jadi ikut benar saat route `admin.pegawai.create` dan kawan-kawan menyusul.
-- Pesan sesi `success`, `warning`, dan `error` otomatis tampil di atas konten
+Keduanya memakai aturan yang sama:
+
+- **Menu didefinisikan sekali**, di array `$menu` dalam layout masing-masing. Menambah menu =
+  menambah **satu baris** di situ **dan** satu route dengan nama tersebut — tidak ada tautan
+  yang bisa menyalah.
+- Menu aktif ditandai otomatis dengan `aria-current="page"` lewat pola `<prefix>.<menu>.*`,
+  jadi ikut benar saat route turunan (`admin.pegawai.create`, `pengajuan.create`, …) menyusul.
+- Pesan sesi `success`, `warning`, dan `error` tampil otomatis lewat **`<x-flash />`**
   (dipakai `RoleMiddleware` untuk peringatan "halaman ini hanya untuk akun …").
-- Halaman yang belum diisi fiturnya ada di `resources/views/admin/*.blade.php` — tiap
-  halaman menyebut issue yang akan mengisinya.
+- Halaman yang belum diisi fiturnya ada di `resources/views/admin/*.blade.php` dan
+  `resources/views/pegawai/*.blade.php` — tiap halaman menyebut issue yang akan mengisinya.
+
+**Aturan khusus halaman pegawai** (mobile-first):
+
+- Konten dibungkus `max-w-3xl` dan diberi `pb-24` supaya tidak tertutup bottom nav yang `fixed`.
+- Bottom nav: **Dashboard · Presensi · Histori · Pengajuan · Profil** (issue #24).
+  Indikator aktif memakai `bg-brand-600` (kontras ≥ 3:1 terhadap putih), teks aktif
+  `text-brand-700` — jangan memakai latar `brand-50` di bawah teks kecil (kontras 4,24:1, gagal).
+- Halaman admin yang dibuka di layar kecil tetap memakai `x-layouts.admin`; tidak ada
+  kebutuhan menyamakan tampilan keduanya.
 
 ---
 
