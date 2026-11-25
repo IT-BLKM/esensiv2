@@ -29,6 +29,7 @@ class StorePresensiRequest extends FormRequest
             'foto' => ['required', 'string', 'max:8000000'],
             'koordinat' => ['required', 'string', 'regex:/^-?\d{1,3}(\.\d+)?,\s*-?\d{1,3}(\.\d+)?$/'],
             'akurasi' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+            'konfirmasi_pulang_cepat' => ['nullable', 'boolean'],
         ];
     }
 
@@ -77,6 +78,7 @@ class StorePresensiRequest extends FormRequest
             'akurasi.numeric' => 'Akurasi lokasi tidak valid.',
             'akurasi.min' => 'Akurasi lokasi tidak valid.',
             'akurasi.max' => 'Akurasi lokasi tidak valid.',
+            'konfirmasi_pulang_cepat.boolean' => 'Konfirmasi pulang cepat tidak valid.',
         ];
     }
 

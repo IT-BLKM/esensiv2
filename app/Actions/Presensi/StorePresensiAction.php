@@ -43,7 +43,7 @@ class StorePresensiAction
      * dan foto divalidasi ulang di sini. Foto disimpan di disk `local`
      * (storage/app/private), bukan storage publik.
      *
-     * @param  array{jenis: string, foto: string, koordinat: string, akurasi?: int|string|null}  $data
+     * @param  array{jenis: string, foto: string, koordinat: string, akurasi?: int|string|null, konfirmasi_pulang_cepat?: bool|string|null}  $data
      * @return array{jenis: string, presensi: Presensi}
      *
      * @throws PresensiException
@@ -52,6 +52,7 @@ class StorePresensiAction
     {
         $sekarang = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'));
         $jenis = $data['jenis'];
+        $konfirmasiPulangCepat = (bool) ($data['konfirmasi_pulang_cepat'] ?? false);
         $koordinat = $this->normalisasiKoordinat($data['koordinat']);
         $shift = $this->shiftHariIni($pegawai, $sekarang);
 
@@ -67,6 +68,7 @@ class StorePresensiAction
             $presensi = DB::transaction(function () use (
                 $pegawai,
                 $jenis,
+                $konfirmasiPulangCepat,
                 $koordinat,
                 $isiFoto,
                 $ekstensiFoto,
@@ -136,7 +138,12 @@ class StorePresensiAction
                     throw PresensiException::sudahKeluar();
                 }
 
-                if ($sekarang->format('H:i:s') < $shift->jam_pulang) {
+                /*
+                 * Pulang lebih awal boleh dicatat setelah pegawai menyetujui
+                 * konfirmasi di halaman presensi. Flag ini mencegah checkout
+                 * tidak sengaja lewat API tanpa konfirmasi.
+                 */
+                if ($sekarang->format('H:i:s') < $shift->jam_pulang && ! $konfirmasiPulangCepat) {
                     throw PresensiException::sebelumJamPulang($shift->jam_pulang);
                 }
 

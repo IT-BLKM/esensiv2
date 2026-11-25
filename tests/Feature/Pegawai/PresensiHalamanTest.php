@@ -289,3 +289,17 @@ it('shows that lateness over thirty minutes cannot be replaced', function () {
         ->assertSee('Tidak bisa diganti')
         ->assertSee('melebihi batas 30 menit');
 });
+
+it('exposes the shift end and confirmation flag for early checkout', function () {
+    [$user, $pegawai] = akunHalamanPresensi();
+    $shift = shiftHalamanPresensi();
+    jadwalkanHalamanPresensi($pegawai, $shift);
+    buatPresensiHalamanPresensi($pegawai, ['id_jam_kerja' => $shift->id]);
+
+    $this->actingAs($user)->get(route('presensi.index'))
+        ->assertOk()
+        ->assertSee('data-jam-pulang="16:00"', false)
+        ->assertSee('data-zona-waktu="Asia/Jakarta"', false)
+        ->assertSee('name="konfirmasi_pulang_cepat"', false)
+        ->assertSee('id="input-konfirmasi-pulang-cepat"', false);
+});

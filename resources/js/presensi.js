@@ -56,6 +56,8 @@ function mulaiPresensi(root) {
     const inputFoto = document.getElementById('input-foto');
     const inputKoordinat = document.getElementById('input-koordinat');
     const inputAkurasi = document.getElementById('input-akurasi');
+    const inputJenis = document.getElementById('input-jenis');
+    const inputKonfirmasiPulangCepat = document.getElementById('input-konfirmasi-pulang-cepat');
 
     const state = {
         faceapi: null,
@@ -86,6 +88,35 @@ function mulaiPresensi(root) {
 
     function sembunyikan(el) {
         el?.classList.add('hidden');
+    }
+
+    /*
+     * Jam kantor bisa berbeda dengan zona waktu browser. Bandingkan "HH:MM"
+     * pada zona waktu kantor agar konfirmasi pulang cepat tidak salah waktu.
+     */
+    function jamSekarangDiZona() {
+        try {
+            return new Intl.DateTimeFormat('en-GB', {
+                timeZone: root.dataset.zonaWaktu || 'Asia/Jakarta',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            }).format(new Date());
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function perluKonfirmasiPulangCepat() {
+        const jamPulang = root.dataset.jamPulang;
+
+        if (!jamPulang || inputJenis?.value !== 'keluar') {
+            return false;
+        }
+
+        const sekarang = jamSekarangDiZona();
+
+        return sekarang !== '' && sekarang < jamPulang;
     }
 
     function perbaruiStatusWajah() {
@@ -489,6 +520,27 @@ function mulaiPresensi(root) {
             tampilkan(pesanPresensi, 'Lokasi belum diambil. Tekan "Ambil lokasi" lalu coba lagi.');
 
             return;
+        }
+
+        if (inputKonfirmasiPulangCepat) {
+            inputKonfirmasiPulangCepat.value = '0';
+        }
+
+        if (perluKonfirmasiPulangCepat()) {
+            const jamPulang = root.dataset.jamPulang;
+            const yakin = window.confirm(
+                `Sekarang ${jamSekarangDiZona()}, sedangkan jam pulang shift ${jamPulang}. `
+                + 'Jika tetap absen pulang sekarang, presensi tercatat pulang lebih awal '
+                + 'dan dapat dikenakan potongan PSW. Lanjutkan?',
+            );
+
+            if (!yakin) {
+                return;
+            }
+
+            if (inputKonfirmasiPulangCepat) {
+                inputKonfirmasiPulangCepat.value = '1';
+            }
         }
 
         const foto = ambilFoto();
