@@ -101,5 +101,32 @@
                 </dl>
             </div>
         </x-card>
+
+        @if ($pengajuan->status === 'pending')
+            <x-card title="Batalkan pengajuan" subtitle="Pengajuan yang masih menunggu dapat dibatalkan.">
+                <div class="flex flex-col gap-3">
+                    <x-alert variant="warning">
+                        Pengajuan akan dihapus dan tidak bisa dipulihkan. Jika hanya ingin mengubah data,
+                        gunakan tombol Ubah.
+                    </x-alert>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <a
+                            href="{{ route('pengajuan.edit', $pengajuan) }}"
+                            class="rounded-md border border-brand-600 bg-white px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                        >Ubah pengajuan</a>
+
+                        <form
+                            method="POST"
+                            action="{{ route('pengajuan.cancel', $pengajuan) }}"
+                            onsubmit="return confirm(@js('Batalkan pengajuan ini? Tindakan tidak bisa dibatalkan.'));"
+                        >
+                            @csrf
+                            <x-button type="submit" variant="danger">Batalkan pengajuan</x-button>
+                        </form>
+                    </div>
+                </div>
+            </x-card>
+        @endif
     </div>
 </x-layouts.pegawai>

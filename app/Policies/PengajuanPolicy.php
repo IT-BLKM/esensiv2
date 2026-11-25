@@ -35,7 +35,10 @@ class PengajuanPolicy
 
     public function delete(User $user, Pengajuan $pengajuan): bool
     {
-        return $this->milikAtauAdmin($user, $pengajuan->id_pegawai);
+        // Pengajuan yang sudah diputuskan tidak boleh dihapus; approved harus
+        // dibatalkan lewat alur cancel approval, bukan delete.
+        return $pengajuan->status === 'pending'
+            && $this->milikAtauAdmin($user, $pengajuan->id_pegawai);
     }
 
     /**
