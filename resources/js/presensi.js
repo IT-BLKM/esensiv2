@@ -12,8 +12,9 @@ import 'leaflet/dist/leaflet.css';
  *    wajah terdeteksi. Bila model gagal dimuat, absen tetap bisa dilakukan
  *    (fallback issue #35) dengan pesan yang jelas.
  *
- * Penyimpanan ke server belum aktif; form POST ke route dummy `presensi.store`
- * yang diganti oleh StorePresensiAction di issue #32.
+ * Penyimpanan ke server ditangani `presensi.store` (StorePresensiAction,
+ * issue #32). Bila server menerima, halaman dimuat ulang agar status
+ * masuk/keluar ikut berubah.
  */
 
 const root = document.getElementById('halaman-presensi');
@@ -463,11 +464,22 @@ function mulaiPresensi(root) {
             });
 
             const hasil = await jawaban.json().catch(() => ({}));
+            const kesalahanValidasi = hasil.errors
+                ? Object.values(hasil.errors).flat()[0]
+                : null;
 
             tampilkan(
                 pesanPresensi,
-                hasil.message ?? 'Presensi belum bisa diproses. Coba lagi beberapa saat lagi.',
+                kesalahanValidasi
+                    ?? hasil.message
+                    ?? (jawaban.ok
+                        ? 'Presensi berhasil dicatat.'
+                        : 'Presensi belum bisa diproses. Coba lagi beberapa saat lagi.'),
             );
+
+            if (jawaban.ok) {
+                window.setTimeout(() => window.location.reload(), 1200);
+            }
         } catch (error) {
             tampilkan(pesanPresensi, 'Tidak bisa menghubungi server. Periksa koneksi lalu coba lagi.');
         } finally {
