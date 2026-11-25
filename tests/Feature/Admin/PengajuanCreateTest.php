@@ -7,6 +7,8 @@ use App\Models\Presensi;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(LazilyRefreshDatabase::class);
 
@@ -114,4 +116,34 @@ it('shows the new pending pengajuan in the admin list', function () {
         ->assertOk()
         ->assertSee($this->target->nama)
         ->assertSee('Cuti Tahunan');
+});
+
+it('uses the selected pegawai working days for the sakit lampiran rule', function () {
+    Storage::fake('local');
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.pengajuan.store'), ($this->payload)([
+            'jenis' => 'sakit',
+            'id_cuti' => null,
+            'tanggal_mulai' => '2026-11-16',
+            'tanggal_berakhir' => '2026-11-20',
+            'keterangan' => 'Sakit lima hari kerja',
+        ]))
+        ->assertSessionHasErrors(['lampiran']);
+
+    expect(Pengajuan::count())->toBe(0);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.pengajuan.store'), ($this->payload)([
+            'jenis' => 'sakit',
+            'id_cuti' => null,
+            'tanggal_mulai' => '2026-11-16',
+            'tanggal_berakhir' => '2026-11-20',
+            'keterangan' => 'Sakit lima hari kerja',
+            'lampiran' => UploadedFile::fake()->create('surat.pdf', 50, 'application/pdf'),
+        ]))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect(Pengajuan::query()->where('jenis', 'sakit')->exists())->toBeTrue();
 });

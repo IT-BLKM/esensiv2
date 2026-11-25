@@ -245,7 +245,7 @@ class StorePengajuanRequest extends FormRequest
 
     private function jumlahHariKerjaSakit(): int
     {
-        $pegawai = $this->user()?->pegawai;
+        $pegawai = $this->pegawaiPengajuan();
         $mulai = $this->input('tanggal_mulai');
         $selesai = $this->input('tanggal_berakhir');
 
