@@ -17,6 +17,7 @@
         table.data th, table.data td { border: 1px solid #374151; padding: 3px; vertical-align: middle; }
         table.data th { background: #e5e7eb; font-size: 8px; }
         table.data td { font-size: 8px; }
+        table.data tr.terlambat td { color: #991b1b; background: #fef2f2; }
         .foto { width: 42px; height: 30px; }
         .center { text-align: center; }
         .right { text-align: right; }
@@ -64,7 +65,7 @@
         </thead>
         <tbody>
             @foreach ($baris as $item)
-                <tr>
+                <tr @if ($item['menitTerlambat'] > 0) class="terlambat" @endif>
                     <td class="center">{{ $loop->iteration }}</td>
                     <td>{{ \Carbon\Carbon::parse((string) $item['tanggal'])->format('d-m-Y') }}</td>
                     <td class="center">{{ $item['jamMasuk'] ?? '-' }}</td>
