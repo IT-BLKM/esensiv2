@@ -47,7 +47,7 @@ function sqlDumpLama(): string
     $saldoDari = now()->subYears(1)->month(6)->day(15)->next('Wednesday');
     $saldoSampai = $saldoDari->copy()->addDays(11);
 
-    // Hash bcrypt lama (password: rahasia-lama-a) — harus ikut diimpor apa adanya.
+    // Hash bcrypt lama (password: rahasia-lama-a) — tidak boleh diimpor; ETL memakai default 123456.
     $hashLamaA = '$2y$12$XTo1gYRUFkatznocRZvpieFjFfedgD72oJlPQXJaWYD5b/A/knd.2';
 
     return <<<SQL

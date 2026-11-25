@@ -8,7 +8,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -243,16 +242,13 @@ class ImportDataLamaAction
 
             $nama = $this->teks($baris['nama_lengkap'] ?? null);
             $email = $nip.'@presensi.test';
-            $passwordLama = $this->teks($baris['password'] ?? null);
 
             /*
-             * Keputusan QA: password lama dipertahankan agar pegawai tidak
-             * semua harus reset. Hash bcrypt/argon dari aplikasi lama dipakai
-             * apa adanya; bila kosong/tidak dikenal, fallback ke password acak.
+             * Keputusan QA 25 Nov 2026: saat go-live semua akun pegawai
+             * memakai password awal yang sama. Hash lama tidak diimpor;
+             * pegawai diminta menggantinya di luar aplikasi.
              */
-            $password = $this->hashPasswordLamaValid($passwordLama)
-                ? $passwordLama
-                : Hash::make(Str::random(32));
+            $password = Hash::make((string) config('auth.default_pegawai_password', '123456'));
 
             // Satu user per pegawai.
             if (isset($this->userId[$email])) {
@@ -869,20 +865,9 @@ class ImportDataLamaAction
      * Nilai teks dari dump: null → string kosong, sisanya di-trim.
      */
     /**
-     * Hash password lama dianggap valid bila algoritmanya bcrypt/argon yang
-     * dikenali PHP. Hash kosong/aneh akan diganti password acak.
+     * Hash password lama tidak lagi diimpor; semua akun pegawai memakai
+     * password awal dari config `auth.default_pegawai_password`.
      */
-    private function hashPasswordLamaValid(?string $hash): bool
-    {
-        if ($hash === null || $hash === '') {
-            return false;
-        }
-
-        $info = password_get_info($hash);
-
-        return in_array($info['algoName'], ['bcrypt', 'argon2i', 'argon2id'], true);
-    }
-
     private function teks(mixed $nilai): string
     {
         if ($nilai === null) {

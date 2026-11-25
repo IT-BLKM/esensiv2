@@ -96,16 +96,17 @@ test('eksekusi mengimpor data sesuai rancangan dan membersihkan data kotor', fun
         ->and($c01->maks_hari)->toBe(12)
         ->and($c01->maks_bawa)->toBe(6);
 
-    // User + pegawai: admin lama tidak diimpor, hash password pegawai ikut dibawa.
+    // User + pegawai: admin lama tidak diimpor; semua pegawai memakai password awal 123456.
     $userA = DB::table('user')->where('email', '199302032022032001@presensi.test')->first();
     $userB = DB::table('user')->where('email', '198009082003122003@presensi.test')->first();
 
     expect(DB::table('user')->count())->toBe(2)
         ->and(DB::table('user')->where('email', 'admin.lama@presensi.test')->exists())->toBeFalse()
         ->and($userA)->not->toBeNull()
-        ->and(Hash::check('rahasia-lama-a', $userA->password))->toBeTrue()
+        ->and(Hash::check('123456', $userA->password))->toBeTrue()
+        ->and(Hash::check('rahasia-lama-a', $userA->password))->toBeFalse()
         ->and($userB)->not->toBeNull()
-        ->and(Hash::check('rahasia-lama-a', $userB->password))->toBeFalse()
+        ->and(Hash::check('123456', $userB->password))->toBeTrue()
         ->and(DB::table('pegawai')->count())->toBe(2)
         ->and(DB::table('pegawai')->where('nip', '198009082003122003')->value('foto'))->toBeNull();
 
