@@ -12,7 +12,10 @@ use App\Http\Controllers\Pegawai\DashboardController;
 use App\Http\Controllers\Pegawai\HistoriPresensiController;
 use App\Http\Controllers\Pegawai\LaporanController;
 use App\Http\Controllers\Pegawai\PengajuanController;
+use App\Http\Controllers\Pegawai\PengajuanDaftarController;
+use App\Http\Controllers\Pegawai\PengajuanDetailController;
 use App\Http\Controllers\Pegawai\PengajuanFormController;
+use App\Http\Controllers\Pegawai\PengajuanLampiranController;
 use App\Http\Controllers\Pegawai\PresensiController;
 use App\Http\Controllers\Pegawai\PresensiHalamanController;
 use App\Http\Controllers\Pegawai\StorePresensiController;
@@ -47,12 +50,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/histori', HistoriPresensiController::class)->name('histori.index');
 
         /*
-         * Form pengajuan cuti/sakit/dinas luar (issue #36). Nama route
-         * `pengajuan.index` dipertahankan karena dipakai bottom navigation.
+         * Daftar + form pengajuan pegawai (issue #36–#38). Nama route
+         * `pengajuan.index` tetap dipakai bottom navigation; form punya route
+         * sendiri `pengajuan.create`.
          */
-        Route::get('/pengajuan', [PengajuanFormController::class, 'index'])->name('pengajuan.index');
+        Route::get('/pengajuan', PengajuanDaftarController::class)->name('pengajuan.index');
         Route::get('/pengajuan/create', [PengajuanFormController::class, 'create'])->name('pengajuan.create');
         Route::post('/pengajuan', [PengajuanFormController::class, 'store'])->name('pengajuan.store');
+        Route::get('/pengajuan/{pengajuan}/lampiran', PengajuanLampiranController::class)
+            ->name('pengajuan.lampiran');
+        Route::get('/pengajuan/{pengajuan}', PengajuanDetailController::class)
+            ->name('pengajuan.show');
 
         Route::get('/profil', fn () => view('pegawai.profil'))->name('profil');
     });
