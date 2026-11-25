@@ -10,7 +10,7 @@
     <main class="flex min-h-screen items-center justify-center px-4 py-12">
         <div class="w-full max-w-md">
             <div class="mb-6 flex flex-col items-center gap-3 text-center">
-                <img src="{{ asset('images/logo-esensi.jpg') }}" alt="Logo Esensi" class="h-12 w-auto object-contain">
+                <img src="{{ asset('images/logo-esensi-transparan.png') }}" alt="Logo Esensi" class="h-24 w-auto object-contain">
                 <p class="text-sm text-gray-600">Gunakan email atau NIP yang terdaftar.</p>
             </div>
 
