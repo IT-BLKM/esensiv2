@@ -61,7 +61,8 @@ it('renders the multipart form with every pengajuan field', function () {
         ->assertSee('name="keterangan"', false)
         ->assertSee('name="lampiran"', false)
         ->assertSee('C01')
-        ->assertSee('Sisa kuota tahun 2026');
+        ->assertSee('Sisa kuota tahun 2026')
+        ->assertSee('Wajib untuk Sakit lebih dari 3 hari kerja');
 });
 
 it('rejects jenis cuti without id_cuti with a validation error', function () {
@@ -109,14 +110,31 @@ it('rejects client supplied owner and status', function () {
     $this->assertDatabaseCount('pengajuan', 0);
 });
 
-it('requires a lampiran when the pengajuan is sakit', function () {
+it('requires a lampiran when sakit lasts more than three working days', function () {
     $this->actingAs($this->user)
         ->postJson(route('pengajuan.store'), ($this->payload)([
             'jenis' => 'sakit',
             'id_cuti' => null,
+            'tanggal_mulai' => '2026-11-16',
+            'tanggal_berakhir' => '2026-11-20',
         ]))
         ->assertUnprocessable()
         ->assertJsonValidationErrors('lampiran');
+});
+
+it('accepts a short sakit without a lampiran', function () {
+    $this->actingAs($this->user)
+        ->post(route('pengajuan.store'), ($this->payload)([
+            'jenis' => 'sakit',
+            'id_cuti' => null,
+            'tanggal_mulai' => '2026-11-18',
+            'tanggal_berakhir' => '2026-11-20',
+            'keterangan' => 'Demam tiga hari',
+        ]))
+        ->assertRedirect(route('pengajuan.index'))
+        ->assertSessionHasNoErrors();
+
+    expect(Pengajuan::query()->where('keterangan', 'Demam tiga hari')->exists())->toBeTrue();
 });
 
 it('warns an unlinked account and refuses to store its pengajuan', function () {

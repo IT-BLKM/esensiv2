@@ -99,7 +99,7 @@ class StorePengajuanRequest extends FormRequest
             'keterangan.string' => 'Keterangan harus berupa teks.',
             'keterangan.max' => 'Keterangan maksimal 255 karakter.',
             'alasan_haji.boolean' => 'Penanda alasan haji tidak valid.',
-            'lampiran.required' => 'Lampiran wajib diunggah untuk sakit dan cuti alasan penting.',
+            'lampiran.required' => 'Lampiran wajib diunggah untuk sakit lebih dari 3 hari kerja dan cuti alasan penting.',
             'lampiran.file' => 'Lampiran harus berupa berkas.',
             'lampiran.mimes' => 'Lampiran harus berformat JPG, JPEG, PNG, atau PDF.',
             'lampiran.max' => 'Ukuran lampiran maksimal 2 MB.',
@@ -218,10 +218,15 @@ class StorePengajuanRequest extends FormRequest
         });
     }
 
+    /**
+     * Lampiran sakit hanya wajib bila rentangnya lebih dari tiga hari kerja.
+     * Hari kerja dihitung dengan aturan yang sama seperti approval (#39),
+     * sehingga Sabtu/Minggu dan hari tanpa shift tidak menambah batas.
+     */
     private function lampiranDibutuhkan(): bool
     {
         if ($this->input('jenis') === 'sakit') {
-            return true;
+            return $this->jumlahHariKerjaSakit() > 3;
         }
 
         if ($this->input('jenis') !== 'cuti') {
@@ -235,5 +240,27 @@ class StorePengajuanRequest extends FormRequest
         }
 
         return Cuti::query()->whereKey($idCuti)->value('kode') === Cuti::KODE_ALASAN_PENTING;
+    }
+
+    private function jumlahHariKerjaSakit(): int
+    {
+        $pegawai = $this->user()?->pegawai;
+        $mulai = $this->input('tanggal_mulai');
+        $selesai = $this->input('tanggal_berakhir');
+
+        if ($pegawai === null || ! is_string($mulai) || ! is_string($selesai)) {
+            return 0;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $mulai) !== 1
+            || preg_match('/^\d{4}-\d{2}-\d{2}$/', $selesai) !== 1) {
+            return 0;
+        }
+
+        return ($this->hitungHariKerja)(
+            $pegawai,
+            CarbonImmutable::parse($mulai)->startOfDay(),
+            CarbonImmutable::parse($selesai)->startOfDay(),
+        );
     }
 }

@@ -193,7 +193,7 @@
                         accept=".jpg,.jpeg,.png,.pdf"
                         :invalid="$errors->has('lampiran')"
                     />
-                    <p class="mt-1 text-xs text-gray-500">Wajib untuk Sakit dan Cuti Alasan Penting. Format JPG/JPEG/PNG/PDF, maksimal 2 MB.</p>
+                    <p class="mt-1 text-xs text-gray-500">Wajib untuk Sakit lebih dari 3 hari kerja dan Cuti Alasan Penting. Format JPG/JPEG/PNG/PDF, maksimal 2 MB.</p>
                     @error('lampiran')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
