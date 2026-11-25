@@ -135,6 +135,25 @@
             </div>
         </x-card>
 
+        @if ($pengajuan->status === 'approved')
+            <x-card title="Batalkan persetujuan" subtitle="Kembalikan pengajuan ke status menunggu.">
+                <div class="flex flex-col gap-3">
+                    <x-alert variant="warning">
+                        Tindakan ini menghapus
+                        <strong>{{ $jumlahPresensiTerkait }} baris presensi</strong>
+                        yang lahir dari pengajuan ini dan mengembalikan status ke
+                        <strong>Menunggu</strong>. Saldo cuti tidak diubah karena konsumsi
+                        dihitung dari baris presensi.
+                    </x-alert>
+
+                    <form method="POST" action="{{ route('admin.pengajuan.cancel', $pengajuan) }}">
+                        @csrf
+                        <x-button type="submit" variant="danger">Batalkan persetujuan</x-button>
+                    </form>
+                </div>
+            </x-card>
+        @endif
+
         @if ($pengajuan->status === 'pending')
             <div class="grid gap-4 lg:grid-cols-2">
                 <x-card title="Setujui" subtitle="Baris presensi dibuat untuk hari kerja di atas.">

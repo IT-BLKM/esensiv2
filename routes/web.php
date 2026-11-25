@@ -136,6 +136,8 @@ Route::middleware('auth')->group(function () {
             ->name('pengajuan.approve');
         Route::post('/pengajuan/{pengajuan}/reject', [PengajuanAdminController::class, 'reject'])
             ->name('pengajuan.reject');
+        Route::post('/pengajuan/{pengajuan}/cancel', [PengajuanAdminController::class, 'cancel'])
+            ->name('pengajuan.cancel');
 
         Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan.index');
         Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');

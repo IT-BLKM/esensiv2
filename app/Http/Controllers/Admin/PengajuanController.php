@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Pengajuan\ApprovePengajuanAction;
+use App\Actions\Pengajuan\CancelApprovalPengajuanAction;
 use App\Actions\Pengajuan\CariPengajuanAdminAction;
 use App\Actions\Pengajuan\DaftarHariKerjaAction;
 use App\Actions\Pengajuan\RejectPengajuanAction;
@@ -12,10 +13,12 @@ use App\Http\Requests\SetujuiPengajuanRequest;
 use App\Http\Requests\TolakPengajuanRequest;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
+use App\Models\Presensi;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
@@ -64,6 +67,9 @@ class PengajuanController extends Controller
         return view('admin.pengajuan-show', [
             'pengajuan' => $pengajuan,
             'hariKerja' => $hariKerja,
+            'jumlahPresensiTerkait' => Presensi::query()
+                ->where('id_pengajuan', $pengajuan->id)
+                ->count(),
             'adaLampiran' => $pengajuan->lampiran !== null
                 && Storage::disk('local')->exists($pengajuan->lampiran),
         ]);
@@ -93,5 +99,18 @@ class PengajuanController extends Controller
 
         return redirect()->route('admin.pengajuan.show', $pengajuan)
             ->with('success', 'Pengajuan ditolak.');
+    }
+
+    public function cancel(
+        Request $request,
+        Pengajuan $pengajuan,
+        CancelApprovalPengajuanAction $cancel,
+    ): RedirectResponse {
+        /** @var User $user */
+        $user = $request->user();
+        $hasil = $cancel($user, $pengajuan);
+
+        return redirect()->route('admin.pengajuan.show', $pengajuan)
+            ->with('success', "Persetujuan dibatalkan. {$hasil['jumlahPresensiDihapus']} baris presensi dihapus.");
     }
 }

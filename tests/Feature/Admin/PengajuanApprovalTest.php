@@ -407,3 +407,105 @@ it('rejects malformed admin filters', function () {
         ->assertStatus(422)
         ->assertJsonValidationErrors('status');
 });
+
+it('cancels an approved pengajuan and restores the state before approval', function () {
+    $admin = adminPengajuanApproval();
+    [, $pegawai] = akunPengajuanApproval();
+    $cuti = cutiPengajuanApproval();
+
+    jadwalkanPengajuanApproval($pegawai, shiftPengajuanApproval());
+
+    $saldo = SaldoCuti::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_cuti' => $cuti->id,
+        'tahun_sumber' => 2025,
+        'saldo' => 6,
+    ]);
+
+    // Baris di luar rentang cuti tidak boleh ikut terhapus.
+    $presensiLain = Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'tgl_presensi' => '2026-12-01',
+        'status' => 'hadir',
+    ]);
+
+    $pengajuan = buatPengajuanApproval($pegawai, $cuti);
+    $sebelumApprove = $pengajuan->only(['status', 'disetujui_oleh', 'disetujui_pada', 'catatan']);
+
+    $this->actingAs($admin)
+        ->post(route('admin.pengajuan.approve', $pengajuan), ['catatan_setujui' => 'Disetujui.'])
+        ->assertRedirect();
+
+    expect(Presensi::query()->where('id_pengajuan', $pengajuan->id)->count())->toBe(2);
+
+    $this->actingAs($admin)
+        ->post(route('admin.pengajuan.cancel', $pengajuan))
+        ->assertRedirect(route('admin.pengajuan.show', $pengajuan))
+        ->assertSessionHas('success');
+
+    $pengajuan->refresh();
+
+    expect($pengajuan->only(['status', 'disetujui_oleh', 'disetujui_pada', 'catatan']))->toBe($sebelumApprove)
+        ->and(Presensi::query()->where('id_pengajuan', $pengajuan->id)->count())->toBe(0)
+        ->and($presensiLain->fresh())->not->toBeNull()
+        ->and($saldo->fresh()->saldo)->toBe(6);
+});
+
+it('refuses to cancel a pending or rejected pengajuan', function () {
+    $admin = adminPengajuanApproval();
+    [, $pegawai] = akunPengajuanApproval();
+    $cuti = cutiPengajuanApproval();
+
+    $pending = buatPengajuanApproval($pegawai, $cuti);
+
+    $this->from(route('admin.pengajuan.show', $pending))
+        ->actingAs($admin)
+        ->post(route('admin.pengajuan.cancel', $pending))
+        ->assertSessionHasErrors('pengajuan');
+
+    $rejected = buatPengajuanApproval($pegawai, $cuti, [
+        'tanggal_mulai' => '2026-11-27',
+        'tanggal_berakhir' => '2026-11-27',
+        'status' => 'rejected',
+    ]);
+
+    $this->from(route('admin.pengajuan.show', $rejected))
+        ->actingAs($admin)
+        ->post(route('admin.pengajuan.cancel', $rejected))
+        ->assertSessionHasErrors('pengajuan');
+
+    expect($pending->fresh()->status)->toBe('pending')
+        ->and($rejected->fresh()->status)->toBe('rejected');
+});
+
+it('does not let a pegawai cancel an approval', function () {
+    [$pegawaiUser, $pegawai] = akunPengajuanApproval();
+    $pengajuan = buatPengajuanApproval($pegawai, cutiPengajuanApproval(), ['status' => 'approved']);
+
+    $this->actingAs($pegawaiUser)
+        ->post(route('admin.pengajuan.cancel', $pengajuan))
+        ->assertRedirect('/dashboard')
+        ->assertSessionHas('warning', 'Halaman ini hanya untuk akun admin.');
+
+    expect($pengajuan->fresh()->status)->toBe('approved');
+});
+
+it('shows the cancel action only for an approved pengajuan', function () {
+    $admin = adminPengajuanApproval();
+    [, $pegawai] = akunPengajuanApproval();
+    $cuti = cutiPengajuanApproval();
+
+    $approved = buatPengajuanApproval($pegawai, $cuti, ['status' => 'approved']);
+    $pending = buatPengajuanApproval($pegawai, $cuti, [
+        'tanggal_mulai' => '2026-11-27',
+        'tanggal_berakhir' => '2026-11-27',
+    ]);
+
+    $this->actingAs($admin)->get(route('admin.pengajuan.show', $approved))
+        ->assertOk()
+        ->assertSee('Batalkan persetujuan');
+
+    $this->actingAs($admin)->get(route('admin.pengajuan.show', $pending))
+        ->assertOk()
+        ->assertDontSee('Batalkan persetujuan');
+});
