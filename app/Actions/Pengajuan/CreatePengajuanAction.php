@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -20,7 +21,7 @@ use Throwable;
 class CreatePengajuanAction
 {
     /**
-     * @param  array{id_cuti?: int|string|null, tanggal_mulai: string, tanggal_berakhir: string, jenis: string, keterangan: string, lampiran?: UploadedFile|null}  $data
+     * @param  array{id_cuti?: int|string|null, tanggal_mulai: string, tanggal_berakhir: string, jenis: string, keterangan: string, alasan_haji?: bool|string|null, lampiran?: UploadedFile|null}  $data
      */
     public function __invoke(User $user, array $data): Pengajuan
     {
@@ -32,6 +33,9 @@ class CreatePengajuanAction
             throw new AuthorizationException('Akun ini belum tertaut ke data pegawai.');
         }
 
+        // Penanda haji hanya dipakai untuk validasi kelayakan C04, bukan kolom DB.
+        unset($data['alasan_haji']);
+
         $lampiran = $data['lampiran'] ?? null;
         unset($data['lampiran']);
 
@@ -39,6 +43,10 @@ class CreatePengajuanAction
 
         if ($lampiran instanceof UploadedFile) {
             $path = $lampiran->store('lampiran-pengajuan', 'local');
+
+            if (! is_string($path)) {
+                throw new RuntimeException('Lampiran pengajuan gagal disimpan.');
+            }
         }
 
         try {

@@ -3,8 +3,10 @@
 use App\Http\Requests\StorePengajuanRequest;
 use App\Models\Cuti;
 use App\Models\Pegawai;
+use App\Models\Pengajuan;
 use App\Models\Presensi;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +15,8 @@ use Illuminate\Support\Facades\Storage;
 uses(LazilyRefreshDatabase::class);
 
 beforeEach(function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-20 09:00:00', 'Asia/Jakarta'));
+    config(['presensi.zona_waktu' => 'Asia/Jakarta']);
     Storage::fake('local');
 
     // URI khusus test: route aplikasi /pengajuan sudah dipakai form #36.
@@ -29,17 +33,30 @@ beforeEach(function () {
     $this->cutiTahunan = Cuti::factory()->create([
         'kode' => 'C01',
         'nama' => 'Cuti Tahunan',
+        'maks_hari' => 12,
         'kuota' => 12,
+        'maks_bawa' => 6,
     ]);
     $this->cutiPenting = Cuti::factory()->create([
         'kode' => 'C03',
         'nama' => 'Cuti Alasan Penting',
-        'kuota' => null,
+        'maks_hari' => 30,
+        'kuota' => 30,
+        'maks_bawa' => 0,
+    ]);
+    $this->cutiBesar = Cuti::factory()->create([
+        'kode' => 'C04',
+        'nama' => 'Cuti Besar',
+        'maks_hari' => 90,
+        'kuota' => 90,
+        'maks_bawa' => 0,
     ]);
     $this->cutiKuotaKecil = Cuti::factory()->create([
         'kode' => 'C05',
         'nama' => 'Cuti Kuota Kecil',
+        'maks_hari' => 1,
         'kuota' => 0,
+        'maks_bawa' => 0,
     ]);
 
     $user = User::factory()->create(['role' => 'pegawai']);
@@ -171,4 +188,61 @@ test('rejects a lampiran with an unsupported extension', function () {
         ]))
         ->assertUnprocessable()
         ->assertJsonValidationErrors('lampiran');
+});
+
+test('rejects a range that collides with an approved pengajuan', function () {
+    Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cutiTahunan->id,
+        'tanggal_mulai' => '2026-11-21',
+        'tanggal_berakhir' => '2026-11-22',
+        'jenis' => 'cuti',
+        'status' => 'approved',
+    ]);
+
+    $this->postJson('/test/validasi-pengajuan', ($this->payload)())
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('tanggal_mulai');
+});
+
+test('rejects cuti besar when it was taken within five years', function () {
+    Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cutiBesar->id,
+        'tanggal_mulai' => '2023-03-01',
+        'tanggal_berakhir' => '2023-06-01',
+        'jenis' => 'cuti',
+        'status' => 'approved',
+    ]);
+
+    $this->postJson('/test/validasi-pengajuan', ($this->payload)([
+        'id_cuti' => $this->cutiBesar->id,
+    ]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('id_cuti');
+});
+
+test('accepts cuti besar with the haji flag', function () {
+    Pengajuan::factory()->create([
+        'id_pegawai' => $this->pegawai->id,
+        'id_cuti' => $this->cutiBesar->id,
+        'tanggal_mulai' => '2023-03-01',
+        'tanggal_berakhir' => '2023-06-01',
+        'jenis' => 'cuti',
+        'status' => 'approved',
+    ]);
+
+    $this->postJson('/test/validasi-pengajuan', ($this->payload)([
+        'id_cuti' => $this->cutiBesar->id,
+        'alasan_haji' => '1',
+    ]))
+        ->assertCreated();
+});
+
+test('rejects the haji flag outside cuti besar', function () {
+    $this->postJson('/test/validasi-pengajuan', ($this->payload)([
+        'alasan_haji' => '1',
+    ]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('alasan_haji');
 });

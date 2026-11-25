@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Actions\Cuti\HitungSisaCutiAction;
 use App\Actions\Pengajuan\HitungHariKerjaAction;
-use App\Actions\Pengajuan\HitungSisaCutiAction;
 use App\Models\Cuti;
+use App\Models\Pengajuan;
 use App\Models\Presensi;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -21,9 +22,6 @@ use Illuminate\Validation\Rule;
  */
 class StorePengajuanRequest extends FormRequest
 {
-    /** Kode master Cuti Alasan Penting yang mewajibkan lampiran. */
-    private const KODE_ALASAN_PENTING = 'C03';
-
     public function __construct(
         private readonly HitungHariKerjaAction $hitungHariKerja,
         private readonly HitungSisaCutiAction $hitungSisaCuti,
@@ -56,6 +54,7 @@ class StorePengajuanRequest extends FormRequest
             'tanggal_mulai' => ['required', 'date_format:Y-m-d'],
             'tanggal_berakhir' => ['required', 'date_format:Y-m-d', 'after_or_equal:tanggal_mulai'],
             'keterangan' => ['required', 'string', 'max:255'],
+            'alasan_haji' => ['nullable', 'boolean'],
             'lampiran' => [
                 'nullable',
                 'file',
@@ -90,6 +89,7 @@ class StorePengajuanRequest extends FormRequest
             'keterangan.required' => 'Keterangan wajib diisi.',
             'keterangan.string' => 'Keterangan harus berupa teks.',
             'keterangan.max' => 'Keterangan maksimal 255 karakter.',
+            'alasan_haji.boolean' => 'Penanda alasan haji tidak valid.',
             'lampiran.required' => 'Lampiran wajib diunggah untuk sakit dan cuti alasan penting.',
             'lampiran.file' => 'Lampiran harus berupa berkas.',
             'lampiran.mimes' => 'Lampiran harus berformat JPG, JPEG, PNG, atau PDF.',
@@ -103,9 +103,9 @@ class StorePengajuanRequest extends FormRequest
     }
 
     /**
-     * Cek tabrakan presensi hadir dan kecukupan kuota setelah aturan dasar
-     * lolos. Pesan menyebut tanggal/kode yang bermasalah agar pegawai bisa
-     * memperbaiki pengajuan tanpa menebak.
+     * Cek tabrakan presensi hadir, tabrakan pengajuan approved, dan kecukupan
+     * kuota setelah aturan dasar lolos. Pesan menyebut tanggal/kode yang
+     * bermasalah agar pegawai bisa memperbaiki pengajuan tanpa menebak.
      */
     public function withValidator(Validator $validator): void
     {
@@ -140,6 +140,25 @@ class StorePengajuanRequest extends FormRequest
                 return;
             }
 
+            $bentrokPengajuan = Pengajuan::query()
+                ->where('id_pegawai', $pegawai->id)
+                ->where('status', 'approved')
+                ->where('tanggal_mulai', '<=', $selesai->toDateString())
+                ->where('tanggal_berakhir', '>=', $mulai->toDateString())
+                ->orderBy('tanggal_mulai')
+                ->first(['tanggal_mulai', 'tanggal_berakhir']);
+
+            if ($bentrokPengajuan !== null) {
+                $dari = CarbonImmutable::parse((string) $bentrokPengajuan->tanggal_mulai)->format('d/m/Y');
+                $sampai = CarbonImmutable::parse((string) $bentrokPengajuan->tanggal_berakhir)->format('d/m/Y');
+                $validator->errors()->add(
+                    'tanggal_mulai',
+                    "Rentang ini bertabrakan dengan pengajuan yang sudah disetujui ({$dari} – {$sampai})."
+                );
+
+                return;
+            }
+
             if ($this->input('jenis') !== 'cuti' || $this->input('id_cuti') === null) {
                 return;
             }
@@ -147,22 +166,44 @@ class StorePengajuanRequest extends FormRequest
             /** @var Cuti|null $cuti */
             $cuti = Cuti::query()->find($this->input('id_cuti'));
 
-            if ($cuti === null || $cuti->kuota === null) {
+            if ($cuti === null) {
                 return;
             }
 
-            $sisa = ($this->hitungSisaCuti)($pegawai, $cuti, $mulai->year);
+            $alasanHaji = $this->boolean('alasan_haji');
 
-            if ($sisa === null) {
+            if ($alasanHaji && $cuti->kode !== Cuti::KODE_BESAR) {
+                $validator->errors()->add(
+                    'alasan_haji',
+                    'Penanda alasan haji hanya berlaku untuk Cuti Besar.'
+                );
+
+                return;
+            }
+
+            $hasil = ($this->hitungSisaCuti)($pegawai, $cuti, $mulai->year, $alasanHaji);
+
+            if ($hasil['memenuhiSyarat'] === false) {
+                $validator->errors()->add(
+                    'id_cuti',
+                    $hasil['alasanTidakMemenuhi'] ?? 'Syarat cuti ini belum terpenuhi.'
+                );
+
+                return;
+            }
+
+            $tersedia = $hasil['totalTersedia'];
+
+            if ($tersedia === null) {
                 return;
             }
 
             $hariDibutuhkan = ($this->hitungHariKerja)($pegawai, $mulai, $selesai);
 
-            if ($hariDibutuhkan > $sisa) {
+            if ($hariDibutuhkan > $tersedia) {
                 $validator->errors()->add(
                     'tanggal_berakhir',
-                    "Sisa kuota {$cuti->nama} hanya {$sisa} hari, sedangkan pengajuan ini membutuhkan {$hariDibutuhkan} hari kerja."
+                    "Sisa kuota {$cuti->nama} hanya {$tersedia} hari, sedangkan pengajuan ini membutuhkan {$hariDibutuhkan} hari kerja."
                 );
             }
         });
@@ -184,6 +225,6 @@ class StorePengajuanRequest extends FormRequest
             return false;
         }
 
-        return Cuti::query()->whereKey($idCuti)->value('kode') === self::KODE_ALASAN_PENTING;
+        return Cuti::query()->whereKey($idCuti)->value('kode') === Cuti::KODE_ALASAN_PENTING;
     }
 }

@@ -4,6 +4,7 @@ use App\Models\Cuti;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -11,13 +12,17 @@ use Illuminate\Support\Facades\Storage;
 uses(LazilyRefreshDatabase::class);
 
 beforeEach(function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-20 09:00:00', 'Asia/Jakarta'));
+    config(['presensi.zona_waktu' => 'Asia/Jakarta']);
     $this->withoutVite();
     Storage::fake('local');
 
     $this->cuti = Cuti::factory()->create([
         'kode' => 'C01',
         'nama' => 'Cuti Tahunan',
+        'maks_hari' => 12,
         'kuota' => 12,
+        'maks_bawa' => 6,
     ]);
 
     $this->user = User::factory()->create(['role' => 'pegawai']);
@@ -48,9 +53,11 @@ it('renders the multipart form with every pengajuan field', function () {
         ->assertSee('name="id_cuti"', false)
         ->assertSee('name="tanggal_mulai"', false)
         ->assertSee('name="tanggal_berakhir"', false)
+        ->assertSee('name="alasan_haji"', false)
         ->assertSee('name="keterangan"', false)
         ->assertSee('name="lampiran"', false)
-        ->assertSee('C01');
+        ->assertSee('C01')
+        ->assertSee('Sisa kuota tahun 2026');
 });
 
 it('rejects jenis cuti without id_cuti with a validation error', function () {

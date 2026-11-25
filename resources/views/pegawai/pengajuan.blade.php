@@ -48,13 +48,50 @@
                     >
                         <option value="">-- Pilih jenis cuti --</option>
                         @foreach ($cuti as $item)
+                            @php($ringkas = $sisa[$item->id] ?? null)
+                            @php($tersedia = $ringkas['totalTersedia'] ?? null)
                             <option value="{{ $item->id }}" @selected((string) old('id_cuti') === (string) $item->id)>
-                                {{ $item->kode }} — {{ $item->nama }}@if (($sisa[$item->id] ?? null) !== null) (sisa {{ $sisa[$item->id] }} hari)@endif
+                                {{ $item->kode }} — {{ $item->nama }}@if ($adaPegawai && $tersedia !== null) (tersedia {{ $tersedia }} hari)@elseif ($adaPegawai) (tanpa batas kuota)@endif
                             </option>
                         @endforeach
                     </select>
                     <p class="mt-1 text-xs text-gray-500">Wajib diisi bila jenis pengajuan Cuti. Kosongkan untuk Sakit dan Dinas Luar.</p>
+
+                    @php($cutiTahunan = $cuti->firstWhere('kode', 'C01'))
+                    @php($ringkasTahunan = $cutiTahunan === null ? null : ($sisa[$cutiTahunan->id] ?? null))
+
+                    @if ($adaPegawai && $ringkasTahunan !== null)
+                        <p class="mt-1 text-xs text-gray-500">
+                            Sisa kuota tahun {{ $tahunTampil }}: <strong class="text-gray-700">{{ $ringkasTahunan['sisaKuota'] }} hari</strong>;
+                            maksimal terbawa ke {{ $tahunTampil + 1 }}: <strong class="text-gray-700">{{ $ringkasTahunan['maksBawaTahunDepan'] }} hari</strong>.
+                            Total tersedia termasuk tabungan: {{ $ringkasTahunan['totalTersedia'] }} hari.
+                        </p>
+                    @endif
+
                     @error('id_cuti')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                    <label for="alasan_haji" class="flex items-start gap-2 text-sm text-gray-700">
+                        <input
+                            type="checkbox"
+                            id="alasan_haji"
+                            name="alasan_haji"
+                            value="1"
+                            @checked(old('alasan_haji'))
+                            class="mt-0.5 h-4 w-4 rounded border-gray-300 accent-brand-600"
+                        >
+                        <span>
+                            <span class="font-medium text-gray-900">Cuti Besar dengan alasan haji</span>
+                            <span class="block text-xs text-gray-600">
+                                Centang hanya untuk Cuti Besar (C04). Tanpa centang, C04 mensyaratkan
+                                5 tahun tidak pernah mengambil cuti besar.
+                            </span>
+                        </span>
+                    </label>
+                    @error('alasan_haji')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
