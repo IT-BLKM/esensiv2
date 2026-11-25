@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\Cuti;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
 use App\Models\Presensi;
+use App\Models\SaldoCuti;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -108,6 +110,38 @@ it('renders the monthly recap and the yearly lateness total', function () {
         ->assertSee('30 menit')
         ->assertSee('Terlambat tahun 2026')
         ->assertSee('1 jam 10 menit (2 hari)');
+});
+
+it('shows 24 days annual leave including two years of savings', function () {
+    [$user, $pegawai] = akunDashboardPegawai();
+    $cuti = Cuti::factory()->create([
+        'kode' => 'C01',
+        'nama' => 'Cuti Tahunan',
+        'kuota' => 12,
+        'maks_hari' => 12,
+        'maks_bawa' => 6,
+    ]);
+
+    SaldoCuti::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_cuti' => $cuti->id,
+        'tahun_sumber' => 2024,
+        'saldo' => 6,
+    ]);
+    SaldoCuti::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_cuti' => $cuti->id,
+        'tahun_sumber' => 2025,
+        'saldo' => 6,
+    ]);
+
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('Sisa cuti tahunan')
+        ->assertSee('24 hari')
+        ->assertSee('Tabungan 2024')
+        ->assertSee('Tabungan 2025')
+        ->assertSee('Hari libur tidak mengurangi kuota');
 });
 
 it('shows the empty state when there is no schedule and no record', function () {

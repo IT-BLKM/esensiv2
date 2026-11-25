@@ -50,6 +50,8 @@ class User extends Authenticatable
     /**
      * Jembatan otorisasi: data pengajuan/presensi dimiliki oleh Pegawai,
      * bukan langsung oleh User.
+     *
+     * @return HasOne<Pegawai, $this>
      */
     public function pegawai(): HasOne
     {

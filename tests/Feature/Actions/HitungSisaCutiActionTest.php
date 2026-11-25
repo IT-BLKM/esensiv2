@@ -1,11 +1,13 @@
 <?php
 
 use App\Actions\Cuti\HitungSisaCutiAction;
+use App\Actions\Pengajuan\ApprovePengajuanAction;
 use App\Models\Cuti;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\Presensi;
 use App\Models\SaldoCuti;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
@@ -317,4 +319,30 @@ it('allows Cuti Besar when the last one was more than five years ago', function 
 
     expect($hasil['memenuhiSyarat'])->toBeTrue()
         ->and($hasil['totalTersedia'])->toBe(90);
+});
+
+it('does not count weekends when an approved leave spans Friday to Monday', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $pegawai = Pegawai::factory()->create();
+    $c01 = cutiMaster('C01', 'Cuti Tahunan', 12, 12, 6);
+
+    tabungCuti($pegawai, $c01, 2024, 6);
+    tabungCuti($pegawai, $c01, 2025, 6);
+
+    $pengajuan = Pengajuan::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_cuti' => $c01->id,
+        'tanggal_mulai' => '2026-01-02', // Jumat
+        'tanggal_berakhir' => '2026-01-05', // Senin
+        'jenis' => 'cuti',
+        'status' => 'pending',
+    ]);
+
+    app(ApprovePengajuanAction::class)($admin, $pengajuan);
+
+    $hasil = app(HitungSisaCutiAction::class)($pegawai, $c01, 2026);
+
+    expect($hasil['terpakai'])->toBe(2)
+        ->and($hasil['totalTersedia'])->toBe(22)
+        ->and(Presensi::query()->where('id_pengajuan', $pengajuan->id)->count())->toBe(2);
 });

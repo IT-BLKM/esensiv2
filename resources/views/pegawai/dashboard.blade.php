@@ -80,6 +80,48 @@
                 </div>
             </x-card>
 
+            @if ($sisaCuti !== null)
+                <x-card title="Sisa cuti tahunan" subtitle="Termasuk tabungan dua tahun sebelumnya. Hari libur tidak mengurangi kuota.">
+                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        <div class="rounded-md border border-brand-200 bg-brand-50 px-3 py-2">
+                            <p class="text-xs text-brand-800">Total tersedia</p>
+                            <p class="mt-1 text-lg font-semibold text-brand-900">{{ $sisaCuti['totalTersedia'] }} hari</p>
+                        </div>
+                        <div class="rounded-md border border-gray-200 px-3 py-2">
+                            <p class="text-xs text-gray-600">Sisa kuota {{ $sisaCuti['tahun'] }}</p>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">{{ $sisaCuti['sisaKuota'] }} hari</p>
+                        </div>
+                        <div class="rounded-md border border-gray-200 px-3 py-2">
+                            <p class="text-xs text-gray-600">Sudah terpakai</p>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">{{ $sisaCuti['terpakai'] }} hari</p>
+                        </div>
+                        <div class="rounded-md border border-gray-200 px-3 py-2">
+                            <p class="text-xs text-gray-600">Kuota tahunan</p>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">{{ $sisaCuti['kuota'] }} hari</p>
+                        </div>
+                    </div>
+
+                    @if ($sisaCuti['tabungan'] !== [])
+                        <div class="mt-3 flex flex-col gap-1 rounded-md bg-gray-50 px-3 py-2 text-sm">
+                            @foreach ($sisaCuti['tabungan'] as $tabungan)
+                                <p class="flex items-baseline justify-between gap-3">
+                                    <span class="text-gray-600">Tabungan {{ $tabungan['tahun_sumber'] }}</span>
+                                    <span class="font-medium text-gray-900">{{ $tabungan['sisa'] }} hari</span>
+                                </p>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <div class="mt-3 flex flex-wrap items-center gap-3">
+                        <a
+                            href="{{ route('pengajuan.create') }}"
+                            class="rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-800"
+                        >Ajukan cuti</a>
+                        <p class="text-xs text-gray-500">Sisa dihitung dari baris presensi hari kerja dan saldo tabungan.</p>
+                    </div>
+                </x-card>
+            @endif
+
             <x-card
                 title="Rekap {{ $bulanIni['label'] }}"
                 subtitle="Hadir berarti masuk tepat waktu; terlambat dihitung sebagai angka terpisah."
