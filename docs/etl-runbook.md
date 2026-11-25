@@ -61,6 +61,23 @@
 - `users` lama (1 admin + hash yang pernah terekspos) → **dilewati total**
 - ⚠️ Password awal `123456` sangat lemah. Beri tahu seluruh pegawai di luar aplikasi agar segera mengganti password; audit akun yang masih default.
 
+### Algoritma hash password (Argon2id, issue #96)
+
+- Password **baru** dibuat dengan **Argon2id** (`$argon2id$`).
+- Driver `argon2id_bcrypt` tetap bisa memverifikasi hash **bcrypt lama**.
+- Setelah login berhasil dengan hash bcrypt, hash otomatis di-rehash menjadi
+  Argon2id (`HASH_REHASH_ON_LOGIN=true`).
+- Parameter env:
+  - `HASH_DRIVER=argon2id_bcrypt`
+  - `ARGON_MEMORY=65536` (KiB; 64 MiB per verifikasi)
+  - `ARGON_TIME=4`
+  - `ARGON_THREADS=1`
+- Jangan mengganti driver menjadi `argon2id` biasa selama masih ada hash
+  bcrypt; akun lama akan gagal login.
+- Rollback ke kode bcrypt-only hanya aman bila **belum ada** hash Argon2id.
+  Setelah rehash berjalan, akun terdampak perlu reset atau tetap memakai
+  driver dual ini sampai semua hash dikonversi.
+
 **pegawai:** `nip→nip` (unique), `nama_lengkap→nama`, `jabatan`, `no_hp`, `kode_dept→id_dept` (via lookup `kode`), `foto` → lihat keputusan kecil §6, `user_id` → user hasil pembuatan di atas.
 
 **konfigurasi_jam_kerja:** `nip→id_pegawai`, `hari` sudah `Senin…Minggu` (langsung cocok enum), `kode_jam_kerja→id_jam_kerja` (uppercase dulu).
