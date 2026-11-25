@@ -17,6 +17,9 @@
             $status = $hariIni['status'];
             $jamMasuk = $hariIni['jamMasuk'];
             $jamKeluar = $hariIni['jamKeluar'];
+            $dlSetengah = $pengajuanDl !== null
+                && $pengajuanDl->jenis === 'dl'
+                && $pengajuanDl->mode_dl === 'setengah';
 
             if ($status !== null && $status !== 'hadir') {
                 $mode = 'libur';
@@ -49,15 +52,30 @@
                 $variantStatus = 'neutral';
             }
 
-            $bisaAbsen = in_array($mode, ['masuk', 'keluar'], true);
+            if ($dlSetengah) {
+                if ($status === 'hadir' && $jamMasuk !== null) {
+                    $mode = 'dl-setengah-selesai';
+                    $labelStatus = 'DL setengah selesai';
+                    $variantStatus = 'success';
+                } elseif ($shift !== null && $status === null) {
+                    $mode = 'dl-setengah';
+                    $labelStatus = 'DL setengah hari';
+                    $variantStatus = 'info';
+                }
+            }
+
+            $bisaAbsen = in_array($mode, ['masuk', 'keluar', 'dl-setengah'], true);
             $labelTombol = match ($mode) {
                 'masuk' => 'Absen Masuk',
                 'keluar' => 'Absen Pulang',
+                'dl-setengah' => 'Absen Sekali',
                 default => 'Absen tidak tersedia',
             };
 
             $alasanTombol = match ($mode) {
                 'masuk', 'keluar' => 'Nyalakan kamera, ambil lokasi, lalu hadapkan wajah untuk mengaktifkan tombol.',
+                'dl-setengah' => 'DL setengah hari: cukup absen sekali hari ini, tanpa absen pulang.',
+                'dl-setengah-selesai' => 'Absen DL setengah hari sudah tercatat; absen pulang tidak diperlukan.',
                 'tanpa-shift' => 'Tidak ada shift terjadwal hari ini.',
                 'libur' => 'Hari ini tercatat '.$labelStatus.'.',
                 'selesai' => 'Presensi hari ini sudah lengkap.',
@@ -122,7 +140,17 @@
                         </dl>
                     @endif
 
-                    @if ($mode === 'tanpa-shift')
+                    @if ($mode === 'dl-setengah')
+                        <x-alert variant="info">
+                            Hari ini Anda tercatat <strong>Dinas Luar setengah hari</strong>.
+                            Cukup absen sekali kapan saja sampai jam pulang; absen pulang tidak diperlukan
+                            dan keterlambatan tidak dihitung.
+                        </x-alert>
+                    @elseif ($mode === 'dl-setengah-selesai')
+                        <x-alert variant="success">
+                            Absen Dinas Luar setengah hari sudah tercatat. Tidak perlu absen pulang.
+                        </x-alert>
+                    @elseif ($mode === 'tanpa-shift')
                         <x-alert variant="info">
                             Tidak ada shift terjadwal hari ini, jadi tombol absen dinonaktifkan.
                             Hubungi administrator bila jadwal ini keliru.

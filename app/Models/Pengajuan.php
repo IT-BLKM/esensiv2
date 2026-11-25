@@ -14,6 +14,10 @@ class Pengajuan extends Model
     /** @use HasFactory<PengajuanFactory> */
     use HasFactory;
 
+    public const MODE_DL_FULL = 'full';
+
+    public const MODE_DL_SETENGAH = 'setengah';
+
     /**
      * Nama tabel eksplisit sesuai spesifikasi Database Esensi.
      */
@@ -30,6 +34,7 @@ class Pengajuan extends Model
         'tanggal_mulai',
         'tanggal_berakhir',
         'jenis',
+        'mode_dl',
         'keterangan',
         'lampiran',
         'status',

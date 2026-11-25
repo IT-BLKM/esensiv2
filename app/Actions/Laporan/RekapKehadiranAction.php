@@ -88,7 +88,7 @@ class RekapKehadiranAction
         $kodeDiabaikan = $this->kodeJamKerjaDiabaikan();
 
         $presensiTahun = Presensi::query()
-            ->with('jamKerja')
+            ->with(['jamKerja', 'pengajuan'])
             ->where('id_pegawai', $pegawai->id)
             ->whereBetween('tgl_presensi', [
                 $sekarang->startOfYear()->toDateString(),
@@ -138,7 +138,7 @@ class RekapKehadiranAction
         $sekarang = $this->sekarang();
 
         $presensi = Presensi::query()
-            ->with('jamKerja')
+            ->with(['jamKerja', 'pengajuan'])
             ->where('id_pegawai', $pegawai->id)
             ->where('tgl_presensi', $sekarang->toDateString())
             ->first();

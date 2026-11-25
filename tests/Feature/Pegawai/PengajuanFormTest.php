@@ -51,6 +51,10 @@ it('renders the multipart form with every pengajuan field', function () {
         ->assertSee('enctype="multipart/form-data"', false)
         ->assertSee('name="jenis"', false)
         ->assertSee('name="id_cuti"', false)
+        ->assertSee('name="mode_dl"', false)
+        ->assertSee('id="blok-jenis-cuti"', false)
+        ->assertSee('id="blok-mode-dl"', false)
+        ->assertSee('id="blok-alasan-haji"', false)
         ->assertSee('name="tanggal_mulai"', false)
         ->assertSee('name="tanggal_berakhir"', false)
         ->assertSee('name="alasan_haji"', false)
@@ -85,6 +89,7 @@ it('stores a pending pengajuan owned by the logged in pegawai with a private lam
     expect($pengajuan->id_pegawai)->toBe($this->pegawai->id)
         ->and($pengajuan->id_cuti)->toBeNull()
         ->and($pengajuan->jenis)->toBe('sakit')
+        ->and($pengajuan->mode_dl)->toBeNull()
         ->and($pengajuan->status)->toBe('pending')
         ->and($pengajuan->disetujui_oleh)->toBeNull()
         ->and($pengajuan->disetujui_pada)->toBeNull();
@@ -131,4 +136,39 @@ it('keeps admin on the admin side of the application', function () {
 
     $this->actingAs($admin)->get(route('pengajuan.create'))
         ->assertRedirect(route('admin.dashboard'));
+});
+
+it('requires mode_dl for dinas luar and stores the chosen mode', function () {
+    $this->actingAs($this->user)
+        ->postJson(route('pengajuan.store'), ($this->payload)([
+            'jenis' => 'dl',
+            'id_cuti' => null,
+        ]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('mode_dl');
+
+    $this->actingAs($this->user)
+        ->post(route('pengajuan.store'), ($this->payload)([
+            'jenis' => 'dl',
+            'id_cuti' => null,
+            'mode_dl' => 'setengah',
+            'keterangan' => 'Dinas luar setengah hari',
+        ]))
+        ->assertRedirect(route('pengajuan.index'));
+
+    $pengajuan = Pengajuan::query()->where('keterangan', 'Dinas luar setengah hari')->firstOrFail();
+
+    expect($pengajuan->jenis)->toBe('dl')
+        ->and($pengajuan->mode_dl)->toBe('setengah')
+        ->and($pengajuan->id_cuti)->toBeNull()
+        ->and($pengajuan->lampiran)->toBeNull();
+});
+
+it('rejects mode_dl outside dinas luar', function () {
+    $this->actingAs($this->user)
+        ->postJson(route('pengajuan.store'), ($this->payload)([
+            'mode_dl' => 'full',
+        ]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('mode_dl');
 });

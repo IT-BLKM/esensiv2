@@ -91,7 +91,14 @@ class ApprovePengajuanAction
                 }
 
                 $terkunci->loadMissing('pegawai');
-                $hariKerja = ($this->daftarHariKerja)($terkunci->pegawai, $mulai, $selesai);
+
+                $dlSetengah = $terkunci->jenis === 'dl'
+                    && $terkunci->mode_dl === Pengajuan::MODE_DL_SETENGAH;
+
+                // DL setengah: pegawai absen sendiri sekali; jangan buat baris otomatis.
+                $hariKerja = $dlSetengah
+                    ? []
+                    : ($this->daftarHariKerja)($terkunci->pegawai, $mulai, $selesai);
 
                 $catatan = $catatan === null ? null : trim($catatan);
 

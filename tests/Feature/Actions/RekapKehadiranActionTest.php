@@ -3,6 +3,7 @@
 use App\Actions\Laporan\RekapKehadiranAction;
 use App\Models\JamKerja;
 use App\Models\Pegawai;
+use App\Models\Pengajuan;
 use App\Models\Presensi;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -188,4 +189,37 @@ it('uses the office timezone to decide which day is today', function () {
         ->and($hariIni['labelTanggal'])->toBe('Kamis, 26 November 2026')
         ->and($hariIni['status'])->toBe('hadir')
         ->and($hariIni['menitTerlambat'])->toBe(15);
+});
+
+it('does not count half day dinas luar as late', function () {
+    $pegawai = Pegawai::factory()->create();
+    $shift = shiftUntukRekap('JKDL');
+
+    $dl = Pengajuan::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_cuti' => null,
+        'tanggal_mulai' => '2026-11-25',
+        'tanggal_berakhir' => '2026-11-25',
+        'jenis' => 'dl',
+        'mode_dl' => 'setengah',
+        'keterangan' => 'Dinas luar setengah hari',
+        'status' => 'approved',
+    ]);
+
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'id_pengajuan' => $dl->id,
+        'tgl_presensi' => '2026-11-25',
+        'jam_masuk' => '10:00:00',
+        'jam_keluar' => null,
+        'status' => 'hadir',
+    ]);
+
+    $rekap = app(RekapKehadiranAction::class)($pegawai);
+
+    expect($rekap['hariIni']['menitTerlambat'])->toBe(0)
+        ->and($rekap['hariIni']['terlambat'])->toBeFalse()
+        ->and($rekap['bulanIni']['terlambat'])->toBe(0)
+        ->and($rekap['bulanIni']['tepatWaktu'])->toBe(1);
 });

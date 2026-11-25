@@ -112,7 +112,7 @@
                             $labelJenis = match ($item->jenis) {
                                 'cuti' => $item->cuti?->nama ?? 'Cuti',
                                 'sakit' => 'Sakit',
-                                'dl' => 'Dinas Luar',
+                                'dl' => $item->mode_dl === 'setengah' ? 'Dinas Luar (Setengah)' : 'Dinas Luar (Penuh)',
                                 default => ucfirst($item->jenis),
                             };
 

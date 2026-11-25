@@ -509,3 +509,69 @@ it('shows the cancel action only for an approved pengajuan', function () {
         ->assertOk()
         ->assertDontSee('Batalkan persetujuan');
 });
+
+it('creates dl rows for a full day dinas luar approval', function () {
+    $admin = adminPengajuanApproval();
+    [, $pegawai] = akunPengajuanApproval();
+    $cuti = cutiPengajuanApproval();
+    $shift = shiftPengajuanApproval();
+
+    jadwalkanPengajuanApproval($pegawai, $shift);
+
+    $pengajuan = buatPengajuanApproval($pegawai, $cuti, [
+        'id_cuti' => null,
+        'jenis' => 'dl',
+        'mode_dl' => 'full',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.pengajuan.approve', $pengajuan))
+        ->assertRedirect();
+
+    $presensi = Presensi::query()->where('id_pengajuan', $pengajuan->id)->orderBy('tgl_presensi')->get();
+
+    expect($presensi)->toHaveCount(2)
+        ->and($presensi->pluck('tgl_presensi')->all())->toBe(['2026-11-20', '2026-11-23'])
+        ->and($presensi->pluck('status')->unique()->all())->toBe(['dl'])
+        ->and($presensi->pluck('id_jam_kerja')->unique()->all())->toBe([$shift->id]);
+});
+
+it('does not create presensi rows for a half day dinas luar approval', function () {
+    $admin = adminPengajuanApproval();
+    [, $pegawai] = akunPengajuanApproval();
+    $cuti = cutiPengajuanApproval();
+
+    $pengajuan = buatPengajuanApproval($pegawai, $cuti, [
+        'id_cuti' => null,
+        'jenis' => 'dl',
+        'mode_dl' => 'setengah',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.pengajuan.approve', $pengajuan))
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    expect($pengajuan->fresh()->status)->toBe('approved')
+        ->and(Presensi::query()->where('id_pengajuan', $pengajuan->id)->count())->toBe(0);
+});
+
+it('treats legacy dinas luar without mode as a full day', function () {
+    $admin = adminPengajuanApproval();
+    [, $pegawai] = akunPengajuanApproval();
+    $cuti = cutiPengajuanApproval();
+
+    jadwalkanPengajuanApproval($pegawai, shiftPengajuanApproval());
+
+    $pengajuan = buatPengajuanApproval($pegawai, $cuti, [
+        'id_cuti' => null,
+        'jenis' => 'dl',
+        'mode_dl' => null,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.pengajuan.approve', $pengajuan))
+        ->assertRedirect();
+
+    expect(Presensi::query()->where('id_pengajuan', $pengajuan->id)->count())->toBe(2);
+});
