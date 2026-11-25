@@ -172,3 +172,38 @@ it('rejects mode_dl outside dinas luar', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors('mode_dl');
 });
+
+it('shows the haji checkbox only when the selected cuti is C04', function () {
+    $c04 = Cuti::factory()->create([
+        'kode' => 'C04',
+        'nama' => 'Cuti Besar',
+        'maks_hari' => 90,
+        'kuota' => 90,
+        'maks_bawa' => 0,
+    ]);
+
+    $cekBlok = function (string $html): array {
+        $dom = new DOMDocument;
+        @$dom->loadHTML($html);
+        $xpath = new DOMXPath($dom);
+
+        $blok = $xpath->query('//*[@id="blok-alasan-haji"]')->item(0);
+
+        return [
+            'tersembunyi' => $blok instanceof DOMElement && str_contains($blok->getAttribute('class'), 'hidden'),
+            'disabled' => $xpath->query('//*[@id="alasan_haji"]')->item(0)?->hasAttribute('disabled') ?? true,
+        ];
+    };
+
+    $default = $this->actingAs($this->user)->get(route('pengajuan.create'))->getContent();
+    $denganC04 = $this->actingAs($this->user)->withSession([
+        '_old_input' => ['jenis' => 'cuti', 'id_cuti' => (string) $c04->id],
+    ])->get(route('pengajuan.create'))->getContent();
+    $denganC01 = $this->actingAs($this->user)->withSession([
+        '_old_input' => ['jenis' => 'cuti', 'id_cuti' => (string) $this->cuti->id],
+    ])->get(route('pengajuan.create'))->getContent();
+
+    expect($cekBlok($default))->toBe(['tersembunyi' => true, 'disabled' => true])
+        ->and($cekBlok($denganC04))->toBe(['tersembunyi' => false, 'disabled' => false])
+        ->and($cekBlok($denganC01))->toBe(['tersembunyi' => true, 'disabled' => true]);
+});

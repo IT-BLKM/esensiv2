@@ -48,17 +48,21 @@
                     >
                         <option value="">-- Pilih jenis cuti --</option>
                         @foreach ($cuti as $item)
-                            @php($ringkas = $sisa[$item->id] ?? null)
-                            @php($tersedia = $ringkas['totalTersedia'] ?? null)
-                            <option value="{{ $item->id }}" @selected((string) old('id_cuti') === (string) $item->id)>
+                            @php
+                                $ringkas = $sisa[$item->id] ?? null;
+                                $tersedia = $ringkas['totalTersedia'] ?? null;
+                            @endphp
+                            <option value="{{ $item->id }}" data-kode="{{ $item->kode }}" @selected((string) old('id_cuti') === (string) $item->id)>
                                 {{ $item->kode }} — {{ $item->nama }}@if ($adaPegawai && $tersedia !== null) (tersedia {{ $tersedia }} hari)@elseif ($adaPegawai) (tanpa batas kuota)@endif
                             </option>
                         @endforeach
                     </select>
                     <p class="mt-1 text-xs text-gray-500">Wajib diisi bila jenis pengajuan Cuti. Kosongkan untuk Sakit dan Dinas Luar.</p>
 
-                    @php($cutiTahunan = $cuti->firstWhere('kode', 'C01'))
-                    @php($ringkasTahunan = $cutiTahunan === null ? null : ($sisa[$cutiTahunan->id] ?? null))
+                    @php
+                        $cutiTahunan = $cuti->firstWhere('kode', 'C01');
+                        $ringkasTahunan = $cutiTahunan === null ? null : ($sisa[$cutiTahunan->id] ?? null);
+                    @endphp
 
                     @if ($adaPegawai && $ringkasTahunan !== null)
                         <p class="mt-1 text-xs text-gray-500">
@@ -98,7 +102,20 @@
                     @enderror
                 </div>
 
-                <div id="blok-alasan-haji" class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                @php
+                    $idCutiLama = old('id_cuti');
+                    $cutiTerpilih = $idCutiLama ? $cuti->firstWhere('id', (int) $idCutiLama) : null;
+                    $tampilkanAlasanHaji = old('jenis', 'cuti') === 'cuti'
+                        && $cutiTerpilih?->kode === 'C04';
+                @endphp
+
+                <div
+                    id="blok-alasan-haji"
+                    @class([
+                        'rounded-md border border-gray-200 bg-gray-50 px-3 py-2',
+                        'hidden' => ! $tampilkanAlasanHaji,
+                    ])
+                >
                     <label for="alasan_haji" class="flex items-start gap-2 text-sm text-gray-700">
                         <input
                             type="checkbox"
@@ -106,6 +123,7 @@
                             name="alasan_haji"
                             value="1"
                             @checked(old('alasan_haji'))
+                            @if (! $tampilkanAlasanHaji) disabled @endif
                             class="mt-0.5 h-4 w-4 rounded border-gray-300 accent-brand-600"
                         >
                         <span>

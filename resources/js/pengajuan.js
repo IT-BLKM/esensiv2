@@ -42,17 +42,21 @@ if (jenis) {
             }
         }
 
-        blokAlasanHaji?.classList.toggle('hidden', !pilihCuti);
+        const cutiBesar = idCuti?.selectedOptions?.[0]?.dataset.kode === 'C04';
+        const tampilkanHaji = pilihCuti && cutiBesar;
+
+        blokAlasanHaji?.classList.toggle('hidden', !tampilkanHaji);
 
         if (alasanHaji) {
-            alasanHaji.disabled = !pilihCuti;
+            alasanHaji.disabled = !tampilkanHaji;
 
-            if (!pilihCuti) {
+            if (!tampilkanHaji) {
                 alasanHaji.checked = false;
             }
         }
     };
 
     jenis.addEventListener('change', perbarui);
+    idCuti?.addEventListener('change', perbarui);
     perbarui();
 }
