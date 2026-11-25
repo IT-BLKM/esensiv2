@@ -4,6 +4,7 @@ use App\Models\Cuti;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\Presensi;
+use App\Models\SaldoCuti;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -64,6 +65,29 @@ it('renders the admin form with a pegawai selector and all pengajuan fields', fu
         ->assertSee('name="tanggal_mulai"', false)
         ->assertSee('name="lampiran"', false)
         ->assertSee(route('admin.pengajuan.store'), false);
+});
+
+it('shows the target pegawai annual savings on the admin form', function () {
+    SaldoCuti::factory()->create([
+        'id_pegawai' => $this->target->id,
+        'id_cuti' => $this->cuti->id,
+        'tahun_sumber' => 2024,
+        'saldo' => 6,
+    ]);
+    SaldoCuti::factory()->create([
+        'id_pegawai' => $this->target->id,
+        'id_cuti' => $this->cuti->id,
+        'tahun_sumber' => 2025,
+        'saldo' => 6,
+    ]);
+
+    $this->actingAs($this->admin)->get(route('admin.pengajuan.create', [
+        'id_pegawai' => $this->target->id,
+    ]))
+        ->assertOk()
+        ->assertSee('Total tersedia termasuk tabungan: 24 hari')
+        ->assertSee('maksimal terbawa ke 2027:')
+        ->assertSee('6 hari');
 });
 
 it('creates a pending pengajuan for the selected pegawai without creating presensi', function () {

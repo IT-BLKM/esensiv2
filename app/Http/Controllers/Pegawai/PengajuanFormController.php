@@ -101,7 +101,7 @@ class PengajuanFormController extends Controller
         $user = $request->user();
         $pegawai = $user->pegawai;
 
-        $cuti = Cuti::query()->orderBy('kode')->get(['id', 'kode', 'nama', 'kuota', 'maks_hari']);
+        $cuti = Cuti::query()->orderBy('kode')->get(['id', 'kode', 'nama', 'kuota', 'maks_hari', 'maks_bawa']);
 
         $tahun = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'))->year;
         $oldMulai = $request->old('tanggal_mulai', $pengajuan?->tanggal_mulai);
