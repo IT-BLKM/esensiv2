@@ -66,7 +66,7 @@ class StorePengajuanRequest extends FormRequest
                 'file',
                 'mimes:jpg,jpeg,png,pdf',
                 'max:2048',
-                Rule::requiredIf(fn (): bool => $this->lampiranDibutuhkan()),
+                Rule::requiredIf(fn (): bool => $this->lampiranDibutuhkan() && ! $this->punyaLampiranTersimpan()),
             ],
             'id_pegawai' => ['prohibited'],
             'status' => ['prohibited'],
@@ -235,5 +235,18 @@ class StorePengajuanRequest extends FormRequest
         }
 
         return Cuti::query()->whereKey($idCuti)->value('kode') === Cuti::KODE_ALASAN_PENTING;
+    }
+
+    /**
+     * Saat mengedit pengajuan pending, lampiran lama dianggap memenuhi
+     * kewajiban sampai pegawai mengunggah pengganti.
+     */
+    private function punyaLampiranTersimpan(): bool
+    {
+        $pengajuan = $this->route('pengajuan');
+
+        return $pengajuan instanceof Pengajuan
+            && is_string($pengajuan->lampiran)
+            && $pengajuan->lampiran !== '';
     }
 }

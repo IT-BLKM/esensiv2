@@ -58,6 +58,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengajuan', PengajuanDaftarController::class)->name('pengajuan.index');
         Route::get('/pengajuan/create', [PengajuanFormController::class, 'create'])->name('pengajuan.create');
         Route::post('/pengajuan', [PengajuanFormController::class, 'store'])->name('pengajuan.store');
+        Route::get('/pengajuan/{pengajuan}/edit', [PengajuanFormController::class, 'edit'])->name('pengajuan.edit');
+        Route::put('/pengajuan/{pengajuan}', [PengajuanFormController::class, 'update'])->name('pengajuan.update');
         Route::get('/pengajuan/{pengajuan}/lampiran', PengajuanLampiranController::class)
             ->name('pengajuan.lampiran');
         Route::get('/pengajuan/{pengajuan}', PengajuanDetailController::class)
