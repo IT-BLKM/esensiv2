@@ -100,3 +100,14 @@ it('logs out and clears the session and remember token', function () {
 it('redirects guests to the login page when they log out', function () {
     $this->post(route('logout'))->assertRedirect(route('login'));
 });
+
+it('authenticates a pegawai by email and redirects to the dashboard', function () {
+    $user = User::factory()->create(['role' => 'pegawai']);
+
+    $this->post(route('login.store'), [
+        'identitas' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect('/dashboard');
+
+    $this->assertAuthenticatedAs($user);
+});
