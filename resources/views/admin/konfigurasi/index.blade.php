@@ -1,17 +1,75 @@
 <x-layouts.admin title="Konfigurasi">
+    @php
+        $latitude = (string) config('presensi.latitude');
+        $longitude = (string) config('presensi.longitude');
+        $radius = (int) config('presensi.radius');
+        $lokasiSah = $latitude !== '' && $longitude !== '' && $radius > 0;
+    @endphp
+
     <div class="flex flex-col gap-4">
         <div>
-            <h1 class="text-xl font-semibold text-gray-900">Konfigurasi jam kerja</h1>
+            <h1 class="text-xl font-semibold text-gray-900">Konfigurasi</h1>
             <p class="mt-1 text-sm text-gray-600">
-                Atur shift per hari untuk setiap pegawai. Baris kosong berarti tidak ada shift pada hari itu.
+                Jam kerja per pegawai, titik lokasi kantor, dan radius absen.
             </p>
         </div>
 
-        <x-alert variant="info">
-            Pengaturan titik lokasi dan radius absen menyusul di issue #30.
-        </x-alert>
+        <x-card
+            title="Lokasi & radius absen"
+            subtitle="Hanya-baca — sumbernya config/presensi.php, diisi lewat .env"
+        >
+            @unless ($lokasiSah)
+                <x-alert variant="danger" title="Konfigurasi belum lengkap" class="mb-4">
+                    Salah satu dari <code class="rounded bg-gray-100 px-1">PRESENSI_LAT</code>,
+                    <code class="rounded bg-gray-100 px-1">PRESENSI_LONG</code>, atau
+                    <code class="rounded bg-gray-100 px-1">PRESENSI_RADIUS</code> kosong/nol.
+                    Lengkapi di <code class="rounded bg-gray-100 px-1">.env</code> lalu restart server.
+                </x-alert>
+            @endunless
 
-        <x-card>
+            <dl class="flex flex-col divide-y divide-gray-100 text-sm">
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <dt class="text-gray-600">Lintang (latitude)</dt>
+                    <dd class="text-right font-medium text-gray-900">
+                        {{ $latitude !== '' ? $latitude : '—' }}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <dt class="text-gray-600">Bujur (longitude)</dt>
+                    <dd class="text-right font-medium text-gray-900">
+                        {{ $longitude !== '' ? $longitude : '—' }}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <dt class="text-gray-600">Radius absen</dt>
+                    <dd class="text-right font-medium text-gray-900">
+                        {{ $radius > 0 ? number_format($radius, 0, ',', '.').' m' : '—' }}
+                        @if ($radius >= 1000)
+                            <span class="text-gray-500">({{ number_format($radius / 1000, 0, ',', '.') }} km)</span>
+                        @endif
+                    </dd>
+                </div>
+            </dl>
+
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
+                <p class="text-xs text-gray-500">
+                    Perubahan dilakukan di <code class="rounded bg-gray-100 px-1">.env</code>,
+                    bukan lewat halaman ini.
+                </p>
+                @if ($lokasiSah)
+                    <a
+                        href="https://www.google.com/maps/search/?api=1&amp;query={{ urlencode($latitude.','.$longitude) }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 rounded-md text-sm font-medium text-brand-700 underline underline-offset-4 hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                    >
+                        Buka di peta
+                    </a>
+                @endif
+            </div>
+        </x-card>
+
+        <x-card title="Jadwal jam kerja per pegawai">
             <x-table>
                 <thead>
                     <tr>
