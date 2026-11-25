@@ -131,6 +131,7 @@
                         <x-table.th align="center">Pulang</x-table.th>
                         <x-table.th align="center">Status</x-table.th>
                         <x-table.th>Koordinat</x-table.th>
+                        <x-table.th align="center">Foto</x-table.th>
                         <x-table.th align="right">Peta</x-table.th>
                     </tr>
                 </thead>
@@ -182,6 +183,29 @@
                                 <span class="block text-xs text-gray-600">
                                     Pulang: {{ $item['koordinatKeluar']['teks'] ?? '—' }}
                                 </span>
+                            </x-table.td>
+                            <x-table.td align="center">
+                                <div class="flex flex-col items-center gap-1 text-xs">
+                                    @if ($item['fotoMasuk'] !== null)
+                                        <a
+                                            href="{{ route('pegawai.presensi.foto', [$item['id'], 'masuk']) }}"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="font-medium text-brand-700 underline underline-offset-4 hover:text-brand-800"
+                                        >Masuk</a>
+                                    @endif
+                                    @if ($item['fotoKeluar'] !== null)
+                                        <a
+                                            href="{{ route('pegawai.presensi.foto', [$item['id'], 'keluar']) }}"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="font-medium text-brand-700 underline underline-offset-4 hover:text-brand-800"
+                                        >Pulang</a>
+                                    @endif
+                                    @if ($item['fotoMasuk'] === null && $item['fotoKeluar'] === null)
+                                        <span class="text-gray-500">—</span>
+                                    @endif
+                                </div>
                             </x-table.td>
                             <x-table.td align="right">
                                 <x-button

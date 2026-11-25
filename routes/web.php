@@ -25,6 +25,7 @@ use App\Http\Controllers\Pegawai\PresensiController;
 use App\Http\Controllers\Pegawai\PresensiHalamanController;
 use App\Http\Controllers\Pegawai\StorePresensiController;
 use App\Http\Controllers\PengajuanLampiranController;
+use App\Http\Controllers\PresensiFotoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -90,6 +91,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/presensi', [PresensiController::class, 'index'])->name('presensi.index');
         Route::get('/presensi/{presensi}', [PresensiController::class, 'show'])->name('presensi.show');
+        Route::get('/presensi/{presensi}/foto/{jenis}', PresensiFotoController::class)
+            ->name('presensi.foto');
 
         Route::get('/laporan/{pegawai}', [LaporanController::class, 'show'])->name('laporan.show');
     });
