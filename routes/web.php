@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CutiController;
 use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
+use App\Http\Controllers\Admin\LaporanController as LaporanAdminController;
 use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
@@ -146,7 +147,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengajuan/{pengajuan}/cancel', [PengajuanAdminController::class, 'cancel'])
             ->name('pengajuan.cancel');
 
-        Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan.index');
+        Route::get('/laporan', LaporanAdminController::class)->name('laporan.index');
         Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
         Route::get('/konfigurasi/{pegawai}/edit', [KonfigurasiJamKerjaController::class, 'edit'])
             ->name('konfigurasi.edit');
