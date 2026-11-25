@@ -83,7 +83,7 @@
             <p class="mt-1 text-xs text-gray-500">
                 Sisa kuota tahun {{ $tahunTampil }}: <strong class="text-gray-700">{{ $ringkasTahunan['sisaKuota'] }} hari</strong>;
                 maksimal terbawa ke {{ $tahunTampil + 1 }}: <strong class="text-gray-700">{{ $ringkasTahunan['maksBawaTahunDepan'] }} hari</strong>.
-                Total tersedia termasuk tabungan: {{ $ringkasTahunan['totalTersedia'] }} hari.
+                Total tersedia termasuk tabungan: <strong class="text-gray-700">{{ $ringkasTahunan['totalTersedia'] }} hari</strong>.
             </p>
         @endif
 
