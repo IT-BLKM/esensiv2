@@ -31,6 +31,8 @@ class CariMonitoringKehadiranAction
      *         jamMasuk: string|null,
      *         jamKeluar: string|null,
      *         menitTerlambat: int,
+     *         fotoMasuk: string|null,
+     *         fotoKeluar: string|null,
      *         koordinatMasuk: array{latitude: float, longitude: float, teks: string}|null,
      *         koordinatKeluar: array{latitude: float, longitude: float, teks: string}|null
      *     }>,
@@ -97,6 +99,8 @@ class CariMonitoringKehadiranAction
                 'jamMasuk' => $jamMasuk,
                 'jamKeluar' => $jamKeluar,
                 'menitTerlambat' => $this->menitTerlambat($item),
+                'fotoMasuk' => $item->foto_masuk,
+                'fotoKeluar' => $item->foto_keluar,
                 'koordinatMasuk' => $koordinatMasuk,
                 'koordinatKeluar' => $koordinatKeluar,
             ];

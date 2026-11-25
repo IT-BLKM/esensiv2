@@ -112,7 +112,8 @@ it('stores the masuk row and a private photo when inside the radius', function (
         ->and($presensi->status)->toBe('hadir')
         ->and($presensi->id_jam_kerja)->not->toBeNull()
         ->and($presensi->koordinat_masuk)->toBe(koordinatDalamPresensi())
-        ->and($presensi->foto_masuk)->toStartWith('presensi/');
+        ->and($presensi->foto_masuk)->toStartWith('presensi/')
+        ->and($presensi->foto_masuk)->not->toContain($pegawai->nip);
 
     Storage::disk('local')->assertExists($presensi->foto_masuk);
 });
