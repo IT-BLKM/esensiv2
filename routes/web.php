@@ -13,6 +13,7 @@ use App\Http\Controllers\Pegawai\LaporanController;
 use App\Http\Controllers\Pegawai\PengajuanController;
 use App\Http\Controllers\Pegawai\PresensiController;
 use App\Http\Controllers\Pegawai\PresensiHalamanController;
+use App\Http\Controllers\Pegawai\StorePresensiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -35,13 +36,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/presensi', PresensiHalamanController::class)->name('presensi.index');
 
         /*
-         * Endpoint dummy untuk issue #31 (UI saja). Bentuk request (POST +
-         * CSRF + jenis/foto/koordinat) sudah final; issue #32 mengganti isi
-         * closure ini dengan StorePresensiAction tanpa mengubah form.
+         * Penyimpanan presensi (issue #32): validasi radius, foto privat, dan
+         * alur masuk -> pulang di StorePresensiAction. Respons selalu JSON
+         * terstruktur agar bisa dibaca halaman presensi (#31).
          */
-        Route::post('/presensi', fn () => response()->json([
-            'message' => 'Penyimpanan presensi belum aktif. Integrasi server ada di issue #32.',
-        ], 501))->name('presensi.store');
+        Route::post('/presensi', StorePresensiController::class)->name('presensi.store');
 
         Route::get('/histori', fn () => view('pegawai.histori'))->name('histori.index');
         Route::get('/pengajuan', fn () => view('pegawai.pengajuan'))->name('pengajuan.index');

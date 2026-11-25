@@ -93,7 +93,7 @@ it('renders the camera, map, and masuk state for an eligible pegawai', function 
         ->assertSee('Absen Masuk')
         ->assertSee('Shift Pagi')
         ->assertSee('07:30')
-        ->assertSee('Penyimpanan ke server aktif pada issue #32');
+        ->assertSee('Foto dan lokasi divalidasi ulang di server sebelum disimpan.');
 
     expect(tombolAbsenNonaktif($response->getContent()))->toBeTrue();
 });
@@ -174,23 +174,17 @@ it('warns when the account is not linked to pegawai data', function () {
         ->assertDontSee('id="halaman-presensi"', false);
 });
 
-it('returns a structured 501 response from the dummy endpoint', function () {
+it('returns a structured validation error from the attendance endpoint', function () {
     [$user] = akunHalamanPresensi();
 
     $this->actingAs($user)
-        ->post(route('presensi.store'), [
-            'jenis' => 'masuk',
-            'foto' => 'data:image/jpeg;base64,AAAA',
-            'koordinat' => '-2.913808,104.695056',
-            'akurasi' => '12',
-        ])
-        ->assertStatus(501)
-        ->assertJson([
-            'message' => 'Penyimpanan presensi belum aktif. Integrasi server ada di issue #32.',
-        ]);
+        ->postJson(route('presensi.store'))
+        ->assertStatus(422)
+        ->assertJsonPath('status', 'error')
+        ->assertJsonPath('type', 'validasi');
 });
 
-it('protects the dummy endpoint from guests and admins', function () {
+it('protects the attendance endpoint from guests and admins', function () {
     $this->post(route('presensi.store'))->assertRedirect(route('login'));
 
     $admin = User::factory()->create(['role' => 'admin']);

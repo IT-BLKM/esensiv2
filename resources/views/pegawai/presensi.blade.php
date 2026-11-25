@@ -216,7 +216,7 @@
                 </div>
             </x-card>
 
-            <x-card title="Kirim presensi" subtitle="Penyimpanan ke server aktif pada issue #32; saat ini pengiriman hanya menguji alur UI.">
+            <x-card title="Kirim presensi" subtitle="Foto dan lokasi divalidasi ulang di server sebelum disimpan.">
                 <form id="form-presensi" method="POST" action="{{ route('presensi.store') }}" class="flex flex-col gap-3">
                     @csrf
 

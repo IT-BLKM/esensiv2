@@ -1,0 +1,262 @@
+<?php
+
+namespace App\Actions\Presensi;
+
+use App\Models\JamKerja;
+use App\Models\KonfigurasiJamKerja;
+use App\Models\Pegawai;
+use App\Models\Presensi;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Throwable;
+
+class StorePresensiAction
+{
+    /**
+     * Batas ukuran foto setelah base64 didekode (byte).
+     */
+    private const MAKS_BYTE_FOTO = 3 * 1024 * 1024;
+
+    /**
+     * Format gambar yang diterima dari canvas halaman presensi.
+     *
+     * @var array<int, string>
+     */
+    private const MIME_FOTO = ['image/jpeg', 'image/png'];
+
+    /**
+     * Catat absen masuk atau pulang untuk satu pegawai pada hari ini.
+     *
+     * Server tidak mempercayai klien: shift, radius (Haversine), jenis alur,
+     * dan foto divalidasi ulang di sini. Foto disimpan di disk `local`
+     * (storage/app/private), bukan storage publik.
+     *
+     * @param  array{jenis: string, foto: string, koordinat: string, akurasi?: int|string|null}  $data
+     * @return array{jenis: string, presensi: Presensi}
+     *
+     * @throws PresensiException
+     */
+    public function __invoke(Pegawai $pegawai, array $data): array
+    {
+        $sekarang = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'));
+        $jenis = $data['jenis'];
+        $koordinat = $this->normalisasiKoordinat($data['koordinat']);
+        $shift = $this->shiftHariIni($pegawai, $sekarang);
+
+        $this->pastikanDalamRadius($koordinat);
+        [$isiFoto, $ekstensiFoto] = $this->bacaFoto($data['foto']);
+
+        $pathFoto = null;
+
+        try {
+            $presensi = DB::transaction(function () use (
+                $pegawai,
+                $jenis,
+                $koordinat,
+                $isiFoto,
+                $ekstensiFoto,
+                $shift,
+                $sekarang,
+                &$pathFoto,
+            ): Presensi {
+                $presensi = Presensi::query()
+                    ->where('id_pegawai', $pegawai->id)
+                    ->where('tgl_presensi', $sekarang->toDateString())
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($presensi !== null && $presensi->status !== 'hadir') {
+                    throw PresensiException::statusHariIni($presensi->status);
+                }
+
+                if ($jenis === 'masuk') {
+                    if ($presensi !== null) {
+                        throw PresensiException::sudahMasuk();
+                    }
+
+                    $pathFoto = $this->simpanFoto($pegawai, 'masuk', $sekarang, $isiFoto, $ekstensiFoto);
+
+                    return Presensi::create([
+                        'id_pegawai' => $pegawai->id,
+                        'id_jam_kerja' => $shift->id,
+                        'id_pengajuan' => null,
+                        'tgl_presensi' => $sekarang->toDateString(),
+                        'jam_masuk' => $sekarang->format('H:i:s'),
+                        'jam_keluar' => null,
+                        'foto_masuk' => $pathFoto,
+                        'foto_keluar' => null,
+                        'koordinat_masuk' => $koordinat['teks'],
+                        'koordinat_keluar' => null,
+                        'status' => 'hadir',
+                    ]);
+                }
+
+                if ($presensi === null || $presensi->jam_masuk === null) {
+                    throw PresensiException::belumMasuk();
+                }
+
+                if ($presensi->jam_keluar !== null) {
+                    throw PresensiException::sudahKeluar();
+                }
+
+                $pathFoto = $this->simpanFoto($pegawai, 'keluar', $sekarang, $isiFoto, $ekstensiFoto);
+
+                $presensi->update([
+                    'jam_keluar' => $sekarang->format('H:i:s'),
+                    'foto_keluar' => $pathFoto,
+                    'koordinat_keluar' => $koordinat['teks'],
+                ]);
+
+                return $presensi->refresh();
+            });
+        } catch (Throwable $error) {
+            if (is_string($pathFoto)) {
+                Storage::disk('local')->delete($pathFoto);
+            }
+
+            /*
+             * Dobel klik race: dua request masuk lolos pengecekan awal, lalu
+             * yang kalah menabrak UNIQUE(tgl_presensi, id_pegawai). Ubah jadi
+             * respons 409 yang jelas, bukan error 500.
+             */
+            if (
+                $error instanceof QueryException
+                && $jenis === 'masuk'
+                && $this->sudahAdaPresensi($pegawai, $sekarang)
+            ) {
+                throw PresensiException::sudahMasuk();
+            }
+
+            throw $error;
+        }
+
+        return [
+            'jenis' => $jenis,
+            'presensi' => $presensi,
+        ];
+    }
+
+    private function shiftHariIni(Pegawai $pegawai, CarbonInterface $sekarang): JamKerja
+    {
+        $namaHari = KonfigurasiJamKerja::HARI[$sekarang->dayOfWeekIso - 1];
+
+        $shift = KonfigurasiJamKerja::query()
+            ->with('jamKerja')
+            ->where('id_pegawai', $pegawai->id)
+            ->where('hari', $namaHari)
+            ->first()
+            ?->jamKerja;
+
+        if ($shift === null) {
+            throw PresensiException::jadwal();
+        }
+
+        return $shift;
+    }
+
+    /**
+     * @return array{latitude: float, longitude: float, teks: string}
+     */
+    private function normalisasiKoordinat(string $koordinat): array
+    {
+        [$lintang, $bujur] = array_map('trim', explode(',', $koordinat, 2));
+
+        return [
+            'latitude' => (float) $lintang,
+            'longitude' => (float) $bujur,
+            'teks' => $lintang.','.$bujur,
+        ];
+    }
+
+    /**
+     * @param  array{latitude: float, longitude: float, teks: string}  $koordinat
+     */
+    private function pastikanDalamRadius(array $koordinat): void
+    {
+        $radius = (int) config('presensi.radius');
+        $jarak = $this->jarakMeter(
+            $koordinat['latitude'],
+            $koordinat['longitude'],
+            (float) config('presensi.latitude'),
+            (float) config('presensi.longitude'),
+        );
+
+        if ($jarak > $radius) {
+            throw PresensiException::radius($jarak, $radius);
+        }
+    }
+
+    /**
+     * Jarak Haversine dalam meter — bukan selisih derajat mentah.
+     */
+    private function jarakMeter(float $lintang1, float $bujur1, float $lintang2, float $bujur2): float
+    {
+        $radiusBumi = 6371000.0;
+        $selisihLintang = deg2rad($lintang2 - $lintang1);
+        $selisihBujur = deg2rad($bujur2 - $bujur1);
+
+        $a = sin($selisihLintang / 2) ** 2
+            + cos(deg2rad($lintang1)) * cos(deg2rad($lintang2)) * sin($selisihBujur / 2) ** 2;
+
+        return 2 * $radiusBumi * asin(sqrt($a));
+    }
+
+    /**
+     * @return array{0: string, 1: string} isi biner dan ekstensi file
+     */
+    private function bacaFoto(string $foto): array
+    {
+        if (preg_match('#^data:image/(jpeg|jpg|png);base64,(.+)$#is', $foto, $cocok) !== 1) {
+            throw PresensiException::foto();
+        }
+
+        $isi = base64_decode($cocok[2], true);
+
+        if ($isi === false || $isi === '' || strlen($isi) > self::MAKS_BYTE_FOTO) {
+            throw PresensiException::foto();
+        }
+
+        $info = @getimagesizefromstring($isi);
+
+        if ($info === false || ! in_array($info['mime'], self::MIME_FOTO, true)) {
+            throw PresensiException::foto();
+        }
+
+        return [$isi, $info['mime'] === 'image/png' ? 'png' : 'jpg'];
+    }
+
+    private function simpanFoto(
+        Pegawai $pegawai,
+        string $jenis,
+        CarbonInterface $sekarang,
+        string $isi,
+        string $ekstensi,
+    ): string {
+        $path = sprintf(
+            'presensi/%s/%d-%s-%s.%s',
+            $sekarang->format('Y/m/d'),
+            $pegawai->id,
+            $jenis,
+            Str::uuid()->toString(),
+            $ekstensi,
+        );
+
+        if (! Storage::disk('local')->put($path, $isi)) {
+            throw PresensiException::fotoGagalDisimpan();
+        }
+
+        return $path;
+    }
+
+    private function sudahAdaPresensi(Pegawai $pegawai, CarbonInterface $sekarang): bool
+    {
+        return Presensi::query()
+            ->where('id_pegawai', $pegawai->id)
+            ->where('tgl_presensi', $sekarang->toDateString())
+            ->exists();
+    }
+}
