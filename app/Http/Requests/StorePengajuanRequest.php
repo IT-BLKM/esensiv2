@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Actions\Cuti\HitungSisaCutiAction;
 use App\Actions\Pengajuan\HitungHariKerjaAction;
 use App\Models\Cuti;
+use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\Presensi;
 use Carbon\CarbonImmutable;
@@ -123,7 +124,7 @@ class StorePengajuanRequest extends FormRequest
                 return;
             }
 
-            $pegawai = $this->user()?->pegawai;
+            $pegawai = $this->pegawaiPengajuan();
 
             if ($pegawai === null) {
                 return;
@@ -235,6 +236,15 @@ class StorePengajuanRequest extends FormRequest
         }
 
         return Cuti::query()->whereKey($idCuti)->value('kode') === Cuti::KODE_ALASAN_PENTING;
+    }
+
+    /**
+     * Pegawai yang menjadi subjek pengajuan. Form pegawai memakai pemilik akun;
+     * form admin (issue #104) mengoverride untuk pegawai yang dipilih.
+     */
+    protected function pegawaiPengajuan(): ?Pegawai
+    {
+        return $this->user()?->pegawai;
     }
 
     /**

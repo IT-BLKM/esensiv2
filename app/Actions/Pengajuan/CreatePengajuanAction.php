@@ -2,6 +2,7 @@
 
 namespace App\Actions\Pengajuan;
 
+use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -21,20 +22,26 @@ use Throwable;
 class CreatePengajuanAction
 {
     /**
-     * @param  array{id_cuti?: int|string|null, tanggal_mulai: string, tanggal_berakhir: string, jenis: string, keterangan: string, alasan_haji?: bool|string|null, lampiran?: UploadedFile|null}  $data
+     * @param  array{id_pegawai?: int|string|null, id_cuti?: int|string|null, tanggal_mulai: string, tanggal_berakhir: string, jenis: string, keterangan: string, mode_dl?: string|null, alasan_haji?: bool|string|null, lampiran?: UploadedFile|null}  $data
      */
-    public function __invoke(User $user, array $data): Pengajuan
+    public function __invoke(User $user, array $data, ?Pegawai $pegawai = null): Pengajuan
     {
         Gate::authorize('create', Pengajuan::class);
 
-        $pegawai = $user->pegawai;
+        $pegawai ??= $user->pegawai;
 
         if ($pegawai === null) {
             throw new AuthorizationException('Akun ini belum tertaut ke data pegawai.');
         }
 
+        // Pegawai lain hanya boleh menjadi subjek bila aktornya admin.
+        if ($user->role !== 'admin' && $pegawai->id !== $user->pegawai?->id) {
+            throw new AuthorizationException('Tidak boleh membuat pengajuan untuk pegawai lain.');
+        }
+
         // Penanda haji hanya dipakai untuk validasi kelayakan C04, bukan kolom DB.
-        unset($data['alasan_haji']);
+        // id_pegawai hanya penentu subjek dari form admin, bukan kolom pengajuan.
+        unset($data['alasan_haji'], $data['id_pegawai']);
 
         $lampiran = $data['lampiran'] ?? null;
         unset($data['lampiran']);

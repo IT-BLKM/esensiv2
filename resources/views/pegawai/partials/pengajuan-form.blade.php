@@ -18,6 +18,29 @@
         @method($metode)
     @endif
 
+    @isset($daftarPegawai)
+        <div>
+            <label for="id_pegawai" class="block text-sm font-medium text-gray-700">Pegawai</label>
+            <select
+                id="id_pegawai"
+                name="id_pegawai"
+                class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
+                @error('id_pegawai') aria-invalid="true" @enderror
+            >
+                <option value="">Pilih pegawai</option>
+                @foreach ($daftarPegawai as $itemPegawai)
+                    <option value="{{ $itemPegawai->id }}" @selected((string) old('id_pegawai', $pegawaiTerpilih ?? '') === (string) $itemPegawai->id)>
+                        {{ $itemPegawai->nama }} ({{ $itemPegawai->nip }})
+                    </option>
+                @endforeach
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Pengajuan disimpan atas nama pegawai ini dan tetap berstatus menunggu.</p>
+            @error('id_pegawai')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+    @endisset
+
     <div>
         <label for="jenis" class="block text-sm font-medium text-gray-700">Jenis pengajuan</label>
         <select
