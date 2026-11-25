@@ -372,6 +372,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::resource('pegawai', PegawaiController::class)->except('show');
         Route::resource('departemen', DepartemenController::class)->except('show');
+        Route::resource('jam-kerja', JamKerjaController::class)->except('show');
     });
 });
 ```

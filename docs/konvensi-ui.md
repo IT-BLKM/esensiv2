@@ -104,10 +104,10 @@ Semua di `resources/views/components/`. Pakai komponen, jangan menyusun utility 
 | `x-alert` | `<x-alert variant="danger" title="Gagal">…</x-alert>` | Pesan sukses/info/peringatan/error |
 | `x-input` | `<x-input name="nip" invalid />` | `invalid` mengaktifkan gaya error |
 | `x-table` | lihat §5 | Bersama `x-table.th` / `x-table.td` |
-| `x-icon` | `<x-icon name="dashboard" />` | `dashboard` · `pegawai` · `departemen` · `cuti` · `monitoring` · `presensi` · `histori` · `pengajuan` · `laporan` · `konfigurasi` · `user` · `menu` · `logout`; ukuran `sm` · `md` · `lg` |
+| `x-icon` | `<x-icon name="dashboard" />` | `dashboard` · `pegawai` · `departemen` · `jam` · `cuti` · `monitoring` · `presensi` · `histori` · `pengajuan` · `laporan` · `konfigurasi` · `user` · `menu` · `logout`; ukuran `sm` · `md` · `lg` |
 | `x-flash` | `<x-flash />` | Pesan sesi `success` · `warning` · `error` — dipakai kedua layout |
-| `x-layouts.admin` | `<x-layouts.admin title="Pegawai">…</x-layouts.admin>` | Halaman **admin** (desktop-first) — lihat §4.1 |
-| `x-layouts.pegawai` | `<x-layouts.pegawai title="Presensi">…</x-layouts.pegawai>` | Halaman **pegawai** (mobile-first, bottom nav) — lihat §4.1 |
+| `x-layouts.admin` | `<x-layouts.admin title="Pegawai">…</x-layouts.admin>` | **Hanya** halaman admin (desktop-first) — lihat §4.1 |
+| `x-layouts.pegawai` | `<x-layouts.pegawai title="Presensi">…</x-layouts.pegawai>` | **Hanya** halaman pegawai (mobile-first, bottom nav) — lihat §4.1 |
 
 ### Menambah komponen baru
 

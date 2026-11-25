@@ -1,8 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\CutiController;
+use App\Http\Controllers\Admin\DepartemenController;
+use App\Http\Controllers\Admin\JamKerjaController;
+use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
+use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\Pegawai\LaporanController;
+use App\Http\Controllers\Pegawai\PengajuanController;
+use App\Http\Controllers\Pegawai\PresensiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -31,6 +39,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/password', [PasswordController::class, 'edit'])->name('password.edit');
     Route::post('/password', [PasswordController::class, 'update'])->name('password.update');
 
+    /*
+     * Akses data pengajuan/presensi/laporan. Tidak pakai middleware role:
+     * admin boleh semua, pegawai dibatasi Policy ke data miliknya (anti-IDOR).
+     * Route memakai binding model, bukan `{nip}`/`{kode}` seperti app lama.
+     */
+    Route::prefix('pegawai')->name('pegawai.')->group(function () {
+        Route::get('/pengajuan', [PengajuanController::class, 'index'])->name('pengajuan.index');
+        Route::get('/pengajuan/{pengajuan}/edit', [PengajuanController::class, 'edit'])->name('pengajuan.edit');
+        Route::get('/pengajuan/{pengajuan}', [PengajuanController::class, 'show'])->name('pengajuan.show');
+        Route::put('/pengajuan/{pengajuan}', [PengajuanController::class, 'update'])->name('pengajuan.update');
+        Route::delete('/pengajuan/{pengajuan}', [PengajuanController::class, 'destroy'])->name('pengajuan.destroy');
+
+        Route::get('/presensi', [PresensiController::class, 'index'])->name('presensi.index');
+        Route::get('/presensi/{presensi}', [PresensiController::class, 'show'])->name('presensi.show');
+
+        Route::get('/laporan/{pegawai}', [LaporanController::class, 'show'])->name('laporan.show');
+    });
+
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::get('/dashboard', fn () => view('admin.dashboard'))->name('dashboard');
 
@@ -40,29 +66,51 @@ Route::middleware('auth')->group(function () {
             ->name('pegawai.password.update');
 
         /*
-         * Tujuh halaman kosong penutup menu sidebar (issue #23). Nama route-nya
-         * sudah bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13):
-         * tiap issue fitur mengganti closure ini dengan Route::resource +
-         * controller sendiri, nama route `admin.<menu>.index` tidak berubah
-         * sehingga tautan sidebar tidak pernah rusak.
+         * Route penutup menu sidebar (issue #23). Nama route-nya sudah
+         * bentuk akhir mengikuti konvensi (panduan-kolaborasi.md §13): tiap issue
+         * fitur mengganti closure ini dengan Route::resource + controller sendiri,
+         * nama route `admin.<menu>.index` tidak berubah sehingga tautan sidebar
+         * tidak pernah rusak. Departemen sudah diganti di issue #25, jam kerja di #26,
+         * konfigurasi jam kerja per pegawai di #29, jenis & aturan cuti di #27,
+         * pegawai di #28.
          */
-        Route::get('/pegawai', fn () => view('admin.pegawai'))->name('pegawai.index');
-        Route::get('/departemen', fn () => view('admin.departemen'))->name('departemen.index');
-        Route::get('/cuti', fn () => view('admin.cuti'))->name('cuti.index');
+        Route::resource('pegawai', PegawaiController::class)
+            ->parameters(['pegawai' => 'pegawai'])
+            ->except('show');
+        /*
+         * Nama parameter dipaksa supaya cocok dengan argumen controller dan policy:
+         * `Str::singular('departemen')` menghasilkan `departeman`, dan resource
+         * `jam-kerja` menghasilkan wildcard `jam_kerja` bila dibiarkan.
+         */
+        Route::resource('departemen', DepartemenController::class)
+            ->parameters(['departemen' => 'departemen'])
+            ->except('show');
+        Route::resource('jam-kerja', JamKerjaController::class)
+            ->parameters(['jam-kerja' => 'jamKerja'])
+            ->except('show');
+        Route::resource('cuti', CutiController::class)
+            ->parameters(['cuti' => 'cuti'])
+            ->except('show');
         Route::get('/monitoring', fn () => view('admin.monitoring'))->name('monitoring.index');
         Route::get('/pengajuan', fn () => view('admin.pengajuan'))->name('pengajuan.index');
         Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan.index');
-        Route::get('/konfigurasi', fn () => view('admin.konfigurasi'))->name('konfigurasi.index');
+        Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
+        Route::get('/konfigurasi/{pegawai}/edit', [KonfigurasiJamKerjaController::class, 'edit'])
+            ->name('konfigurasi.edit');
+        Route::put('/konfigurasi/{pegawai}', [KonfigurasiJamKerjaController::class, 'update'])
+            ->name('konfigurasi.update');
     });
 });
 
 /*
- * Satu guard `web`, satu halaman login. Route admin/pegawai menyusul di #19;
- * throttle login menyusul di #20 (docs/panduan-kolaborasi.md §13).
+ * Satu guard `web`, satu halaman login. Throttle 5 percobaan/menit mengunci
+ * route login sesuai docs/panduan-kolaborasi.md §13 aturan 7.
  */
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
-    Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+    Route::post('/login', [AuthController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('login.store');
 });
 
 Route::middleware('auth')->group(function () {

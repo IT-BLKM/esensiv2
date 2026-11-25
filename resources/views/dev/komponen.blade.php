@@ -197,7 +197,7 @@
 
             <x-card>
                 <div class="flex flex-wrap gap-x-6 gap-y-4 text-gray-700">
-                    @foreach (['dashboard', 'pegawai', 'departemen', 'cuti', 'monitoring', 'presensi', 'histori', 'pengajuan', 'laporan', 'konfigurasi', 'user', 'menu', 'logout'] as $nama)
+                    @foreach (['dashboard', 'pegawai', 'departemen', 'jam', 'cuti', 'monitoring', 'presensi', 'histori', 'pengajuan', 'laporan', 'konfigurasi', 'user', 'menu', 'logout'] as $nama)
                         <div class="flex w-24 flex-col items-center gap-1.5">
                             <x-icon :name="$nama" size="lg" />
                             <span class="text-center text-xs text-gray-600">{{ $nama }}</span>

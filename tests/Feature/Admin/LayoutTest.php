@@ -35,6 +35,7 @@ it('lists every admin menu entry as a named route', function (string $label, str
     'dashboard' => ['Dashboard', 'admin.dashboard'],
     'pegawai' => ['Pegawai', 'admin.pegawai.index'],
     'departemen' => ['Departemen', 'admin.departemen.index'],
+    'jam-kerja' => ['Jam Kerja', 'admin.jam-kerja.index'],
     'cuti' => ['Cuti', 'admin.cuti.index'],
     'monitoring' => ['Monitoring', 'admin.monitoring.index'],
     'pengajuan' => ['Pengajuan', 'admin.pengajuan.index'],

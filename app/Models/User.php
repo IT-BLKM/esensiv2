@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -45,4 +46,13 @@ class User extends Authenticatable
     protected $casts = [
         'password' => 'hashed',
     ];
+
+    /**
+     * Jembatan otorisasi: data pengajuan/presensi dimiliki oleh Pegawai,
+     * bukan langsung oleh User.
+     */
+    public function pegawai(): HasOne
+    {
+        return $this->hasOne(Pegawai::class, 'user_id');
+    }
 }

@@ -1,11 +1,13 @@
 <?php
 
+use App\Actions\Pegawai\BuatPasswordAwalAction;
 use App\Models\PasswordResetLog;
 use App\Models\Pegawai;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+
+use function Pest\Laravel\mock;
 
 uses(LazilyRefreshDatabase::class);
 
@@ -37,11 +39,9 @@ it('does not let a pegawai reach the admin reset form', function () {
 
     $this->actingAs($actor)->get(route('admin.pegawai.password.edit', $pegawai))
         ->assertRedirect('/dashboard');
-
-    expect(Gate::forUser($actor)->denies('resetPassword', $pegawai->user))->toBeTrue();
 });
 
-it('lets an admin open the reset form for a pegawai', function () {
+it('lets an admin open the reset form without a password input', function () {
     $pegawai = pegawaiUntukReset();
     $admin = User::factory()->create(['role' => 'admin']);
 
@@ -49,23 +49,30 @@ it('lets an admin open the reset form for a pegawai', function () {
         ->assertOk()
         ->assertSee('Budi Santoso')
         ->assertSee('199302032022032001')
-        ->assertSee(route('admin.pegawai.password.update', $pegawai), false);
+        ->assertSee(route('admin.pegawai.password.update', $pegawai), false)
+        ->assertSee('Buat password baru')
+        ->assertDontSee('name="password"', false);
 });
 
-it('hashes the new password and records who reset it', function () {
+it('generates a strong password, hashes it, and records who reset it', function () {
     $pegawai = pegawaiUntukReset();
     $admin = User::factory()->create(['role' => 'admin']);
     $targetUserId = $pegawai->user_id;
 
-    $this->actingAs($admin)->post(route('admin.pegawai.password.update', $pegawai), [
-        'password' => 'rahasia789',
-        'password_confirmation' => 'rahasia789',
-    ])
-        ->assertRedirect(route('admin.dashboard'))
+    $this->actingAs($admin)->post(route('admin.pegawai.password.update', $pegawai))
+        ->assertRedirect(route('admin.pegawai.password.edit', $pegawai))
         ->assertSessionHas('status', 'Password Budi Santoso berhasil direset.')
+        ->assertSessionHas('passwordSekali')
         ->assertSessionHasNoErrors();
 
-    expect(Hash::check('rahasia789', User::findOrFail($targetUserId)->password))->toBeTrue();
+    $password = session('passwordSekali');
+    $user = User::findOrFail($targetUserId);
+
+    expect($password)->not->toBe('123456')
+        ->and(strlen($password))->toBe(16)
+        ->and($user->password)->not->toBe($password)
+        ->and(Hash::check($password, $user->password))->toBeTrue()
+        ->and(Hash::check('lama12345', $user->password))->toBeFalse();
 
     $log = PasswordResetLog::firstOrFail();
 
@@ -74,41 +81,42 @@ it('hashes the new password and records who reset it', function () {
         ->and($log->created_at)->not->toBeNull();
 });
 
-it('validates the new password with eight characters and confirmation', function (string $baru, string $konfirmasi) {
+it('ignores a client supplied password instead of using 123456', function () {
     $pegawai = pegawaiUntukReset();
     $admin = User::factory()->create(['role' => 'admin']);
 
     $this->actingAs($admin)->post(route('admin.pegawai.password.update', $pegawai), [
-        'password' => $baru,
-        'password_confirmation' => $konfirmasi,
-    ])->assertSessionHasErrors('password');
+        'password' => '123456',
+        'password_confirmation' => '123456',
+    ])->assertSessionHasNoErrors();
 
-    expect(Hash::check('lama12345', $pegawai->user->fresh()->password))->toBeTrue();
-    expect(PasswordResetLog::count())->toBe(0);
-})->with([
-    'terlalu pendek' => ['pendek', 'pendek'],
-    'konfirmasi beda' => ['rahasia789', 'lain12345'],
-]);
+    expect(session('passwordSekali'))->not->toBe('123456')
+        ->and(Hash::check('123456', $pegawai->user->fresh()->password))->toBeFalse()
+        ->and(PasswordResetLog::count())->toBe(1);
+});
 
 it('only accepts POST for the reset action', function () {
     $pegawai = pegawaiUntukReset();
     $admin = User::factory()->create(['role' => 'admin']);
 
     $this->actingAs($admin)->get(route('admin.pegawai.password.update', $pegawai))
-        ->assertStatus(405);
+        ->assertMethodNotAllowed();
 
     $this->get("/pegawai/{$pegawai->nip}/resetpassword")->assertNotFound();
 });
 
-it('never displays the new password after a reset', function () {
+it('displays the generated password only once after a reset', function () {
+    mock(BuatPasswordAwalAction::class)->shouldReceive('__invoke')->andReturn('Sekali123!');
+
     $pegawai = pegawaiUntukReset();
     $admin = User::factory()->create(['role' => 'admin']);
 
-    $this->actingAs($admin)->followingRedirects()->post(route('admin.pegawai.password.update', $pegawai), [
-        'password' => 'rahasia789',
-        'password_confirmation' => 'rahasia789',
-    ])
+    $this->actingAs($admin)->followingRedirects()
+        ->post(route('admin.pegawai.password.update', $pegawai))
         ->assertOk()
-        ->assertSee('Dashboard admin')
-        ->assertDontSee('rahasia789');
+        ->assertSee('Sekali123!');
+
+    $this->actingAs($admin)->get(route('admin.pegawai.password.edit', $pegawai))
+        ->assertOk()
+        ->assertDontSee('Sekali123!');
 });
