@@ -22,6 +22,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Default Pegawai Password
+    |--------------------------------------------------------------------------
+    |
+    | Password awal untuk akun pegawai saat go-live/ETL. Nilai ini hanya
+    | dipakai untuk membuat/reset akun pegawai; admin tidak memakainya.
+    | Pegawai wajib mengganti password setelah diberi tahu di luar aplikasi.
+    |
+    */
+
+    'default_pegawai_password' => env('PEGAWAI_DEFAULT_PASSWORD', '123456'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Guards
     |--------------------------------------------------------------------------
     |
