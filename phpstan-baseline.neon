@@ -1,0 +1,451 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method App\\Actions\\Etl\\ImportDataLamaAction\:\:kolom\(\) never returns int so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Actions/Etl/ImportDataLamaAction.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$sumber$#'
+			identifier: parameter.notFound
+			count: 1
+			path: app/Actions/Etl/ImportDataLamaAction.php
+
+		-
+			message: '#^Property App\\Actions\\Etl\\ImportDataLamaAction\:\:\$adaJadwal \(array\<string, true\>\) does not accept array\<string, bool\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Actions/Etl/ImportDataLamaAction.php
+
+		-
+			message: '#^Property App\\Actions\\Etl\\ImportDataLamaAction\:\:\$adaPresensi \(array\<string, true\>\) does not accept array\<string, bool\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Actions/Etl/ImportDataLamaAction.php
+
+		-
+			message: '#^Property App\\Actions\\Etl\\ImportDataLamaAction\:\:\$adaSaldo \(array\<string, true\>\) does not accept array\<string, bool\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Actions/Etl/ImportDataLamaAction.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\{kode\: ''C01'', nama\: ''Cuti Tahunan'', maks_hari\: 12, kuota\: 12, maks_bawa\: 6\} and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Actions/Etl/ImportDataLamaAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jam_pulang\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jenis\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$kode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$mode_dl\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
+
+		-
+			message: '#^Offset ''penggantianTerpenuhi'' does not exist on array\{tanggal\: string, menitTerlambat\: int\|null, levelTl\: string\|null, persenTl\: float, menitPulangCepat\: int\|null, levelPsw\: string\|null, persenPsw\: float, persenTotal\: float\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nama\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Laporan/LaporanBulananAction.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Presensi\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Actions/Laporan/LaporanBulananAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nama\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Laporan/RekapKehadiranAction.php
+
+		-
+			message: '#^Method App\\Actions\\Laporan\\RekapKehadiranAction\:\:shiftHariIni\(\) should return App\\Models\\JamKerja\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Actions/Laporan/RekapKehadiranAction.php
+
+		-
+			message: '#^PHPDoc tag @param for parameter \$shift with type array\<string, string\>\|null is not subtype of native type App\\Models\\JamKerja\|null\.$#'
+			identifier: parameter.phpDocType
+			count: 1
+			path: app/Actions/Laporan/RekapKehadiranAction.php
+
+		-
+			message: '#^Parameter \#1 \$array of function usort contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Actions/Laporan/RekapKehadiranAction.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function usort contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Actions/Laporan/RekapKehadiranAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nama\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Laporan/TulisExcelLaporanAction.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nama" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Laporan/TulisExcelLaporanAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Pegawai/UpdatePegawaiAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nama\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Pegawai/UpdatePegawaiAction.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of callable App\\Actions\\Pengajuan\\DaftarHariKerjaAction expects App\\Models\\Pegawai, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Actions/Pengajuan/ApprovePengajuanAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Actions/Pengajuan/CreatePengajuanAction.php
+
+		-
+			message: '#^Cannot unset offset ''alasan_haji'' on array\{tanggal_mulai\: string, tanggal_berakhir\: string, jenis\: string, keterangan\: string, mode_dl\?\: string\|null, id_cuti\?\: int\|null, lampiran\?\: Illuminate\\Http\\UploadedFile\|string\|null\}\.$#'
+			identifier: unset.offset
+			count: 1
+			path: app/Actions/Pengajuan/UpdatePengajuanAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nama\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/CariHistoriPresensiAction.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Presensi\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Actions/Presensi/CariHistoriPresensiAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$departemen\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/CariMonitoringKehadiranAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nama\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Actions/Presensi/CariMonitoringKehadiranAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nip\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/CariMonitoringKehadiranAction.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nama" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Presensi/CariMonitoringKehadiranAction.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nip" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Actions/Presensi/CariMonitoringKehadiranAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jam_masuk\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/HitungMenitTerlambatAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jenis\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/HitungMenitTerlambatAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$kode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/HitungMenitTerlambatAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$mode_dl\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/HitungMenitTerlambatAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jam_pulang\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/HitungPenggantianKeterlambatanAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$jenis\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/HitungPenggantianKeterlambatanAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$kode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/HitungPenggantianKeterlambatanAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$mode_dl\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Presensi/HitungPenggantianKeterlambatanAction.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Actions/Presensi/HitungPenggantianKeterlambatanAction.php
+
+		-
+			message: '#^Method App\\Actions\\Presensi\\StorePresensiAction\:\:shiftHariIni\(\) should return App\\Models\\JamKerja but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Actions/Presensi/StorePresensiAction.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Http/Controllers/Admin/LaporanController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of callable App\\Actions\\Pengajuan\\DaftarHariKerjaAction expects App\\Models\\Pegawai, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Admin/PengajuanController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Http/Controllers/Admin/RekapKeterlambatanController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of callable App\\Actions\\Laporan\\RekapKehadiranAction expects App\\Models\\Pegawai, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Pegawai/DashboardController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Http/Controllers/Pegawai/HistoriPresensiController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of callable App\\Actions\\Presensi\\CariHistoriPresensiAction expects App\\Models\\Pegawai, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Pegawai/HistoriPresensiController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of method App\\Http\\Controllers\\Pegawai\\HistoriPresensiController\:\:pilihanTahun\(\) expects App\\Models\\Pegawai\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Pegawai/HistoriPresensiController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of method App\\Http\\Controllers\\Pegawai\\PengajuanDaftarController\:\:pilihanTahun\(\) expects App\\Models\\Pegawai\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Pegawai/PengajuanDaftarController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of callable App\\Actions\\Cuti\\HitungSisaCutiAction expects App\\Models\\Pegawai, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Pegawai/PengajuanFormController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of method App\\Http\\Controllers\\Pegawai\\PengajuanFormController\:\:pendingTahunanUntuk\(\) expects App\\Models\\Pegawai\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Pegawai/PengajuanFormController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of callable App\\Actions\\Pengajuan\\CariPengajuanDlHariIniAction expects App\\Models\\Pegawai, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Pegawai/PresensiHalamanController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of method App\\Actions\\Laporan\\RekapKehadiranAction\:\:hariIni\(\) expects App\\Models\\Pegawai, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Pegawai/PresensiHalamanController.php
+
+		-
+			message: '#^Parameter \#1 \$pegawai of callable App\\Actions\\Presensi\\StorePresensiAction expects App\\Models\\Pegawai, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Pegawai/StorePresensiController.php
+
+		-
+			message: '#^Method App\\Http\\Requests\\StorePengajuanRequest\:\:pegawaiPengajuan\(\) should return App\\Models\\Pegawai\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Requests/StorePengajuanRequest.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\Cuti\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Cuti.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\Departemen\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Departemen.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\JamKerja\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/JamKerja.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\KonfigurasiJamKerja\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/KonfigurasiJamKerja.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\PasswordResetLog\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/PasswordResetLog.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\Pegawai\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Pegawai.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Pengajuan.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\Pengajuan\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Pengajuan.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Pengajuan.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\PenggantianKeterlambatan\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/PenggantianKeterlambatan.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Presensi.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\Presensi\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Presensi.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Presensi.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\SaldoCuti\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/SaldoCuti.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^PHPDoc type array\<int, string\> of property App\\Models\\User\:\:\$hidden is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$hidden\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Policies/LaporanPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Policies/PengajuanPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Policies/PresensiPolicy.php

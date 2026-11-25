@@ -44,7 +44,41 @@ jobs:
         run: vendor/bin/pint --test
 
   # ---------------------------------------------------------------------------
-  # Job 2: PEST — jalankan seluruh test. Database = MariaDB (sama dg produksi).
+  # Job 2: PHPStan / Larastan — static analysis level 5 + baseline.
+  # ---------------------------------------------------------------------------
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, dom, fileinfo, gd, libxml, mysql, pdo_mysql, xmlreader, zip
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependency
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Siapkan .env + APP_KEY
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Analisis statis
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+  # ---------------------------------------------------------------------------
+  # Job 3: PEST — jalankan seluruh test. Database = MariaDB (sama dg produksi).
   # ---------------------------------------------------------------------------
   pest:
     name: Pest
