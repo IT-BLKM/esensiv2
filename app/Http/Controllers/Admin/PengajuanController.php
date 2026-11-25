@@ -84,8 +84,13 @@ class PengajuanController extends Controller
         $user = $request->user();
         $hasil = $approve($user, $pengajuan, $request->validated('catatan_setujui'));
 
+        $pesan = $hasil['pengajuan']->jenis === 'dl'
+            && $hasil['pengajuan']->mode_dl === Pengajuan::MODE_DL_SETENGAH
+                ? 'Pengajuan Dinas Luar setengah hari disetujui. Pegawai cukup absen sekali pada hari tersebut.'
+                : "Pengajuan disetujui. {$hasil['jumlahPresensi']} baris presensi hari kerja dibuat.";
+
         return redirect()->route('admin.pengajuan.show', $pengajuan)
-            ->with('success', "Pengajuan disetujui. {$hasil['jumlahPresensi']} baris presensi hari kerja dibuat.");
+            ->with('success', $pesan);
     }
 
     public function reject(

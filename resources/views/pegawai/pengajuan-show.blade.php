@@ -16,7 +16,7 @@
         $labelJenis = match ($pengajuan->jenis) {
             'cuti' => $pengajuan->cuti?->nama ?? 'Cuti',
             'sakit' => 'Sakit',
-            'dl' => 'Dinas Luar',
+            'dl' => $pengajuan->mode_dl === 'setengah' ? 'Dinas Luar (Setengah)' : 'Dinas Luar (Penuh)',
             default => ucfirst($pengajuan->jenis),
         };
 

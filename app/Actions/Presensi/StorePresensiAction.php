@@ -2,9 +2,11 @@
 
 namespace App\Actions\Presensi;
 
+use App\Actions\Pengajuan\CariPengajuanDlHariIniAction;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
+use App\Models\Pengajuan;
 use App\Models\Presensi;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -16,6 +18,10 @@ use Throwable;
 
 class StorePresensiAction
 {
+    public function __construct(
+        private readonly CariPengajuanDlHariIniAction $cariDlHariIni,
+    ) {}
+
     /**
      * Batas ukuran foto setelah base64 didekode (byte).
      */
@@ -47,6 +53,9 @@ class StorePresensiAction
         $koordinat = $this->normalisasiKoordinat($data['koordinat']);
         $shift = $this->shiftHariIni($pegawai, $sekarang);
 
+        $dlHariIni = ($this->cariDlHariIni)($pegawai, $sekarang);
+        $dlSetengah = $dlHariIni?->mode_dl === Pengajuan::MODE_DL_SETENGAH;
+
         $this->pastikanDalamRadius($koordinat);
         [$isiFoto, $ekstensiFoto] = $this->bacaFoto($data['foto']);
 
@@ -61,6 +70,8 @@ class StorePresensiAction
                 $ekstensiFoto,
                 $shift,
                 $sekarang,
+                $dlHariIni,
+                $dlSetengah,
                 &$pathFoto,
             ): Presensi {
                 $presensi = Presensi::query()
@@ -78,12 +89,28 @@ class StorePresensiAction
                         throw PresensiException::sudahMasuk();
                     }
 
+                    $jamSekarang = $sekarang->format('H:i:s');
+
+                    if ($dlSetengah) {
+                        if ($jamSekarang > $shift->jam_pulang) {
+                            throw PresensiException::dlSetengahLewat($shift->jam_pulang);
+                        }
+                    } else {
+                        if ($jamSekarang < $shift->awal_masuk) {
+                            throw PresensiException::sebelumAwalMasuk($shift->awal_masuk);
+                        }
+
+                        if ($jamSekarang > $shift->akhir_masuk) {
+                            throw PresensiException::setelahAkhirMasuk($shift->akhir_masuk);
+                        }
+                    }
+
                     $pathFoto = $this->simpanFoto($pegawai, 'masuk', $sekarang, $isiFoto, $ekstensiFoto);
 
                     return Presensi::create([
                         'id_pegawai' => $pegawai->id,
                         'id_jam_kerja' => $shift->id,
-                        'id_pengajuan' => null,
+                        'id_pengajuan' => $dlSetengah ? $dlHariIni?->id : null,
                         'tgl_presensi' => $sekarang->toDateString(),
                         'jam_masuk' => $sekarang->format('H:i:s'),
                         'jam_keluar' => null,
@@ -95,12 +122,20 @@ class StorePresensiAction
                     ]);
                 }
 
+                if ($dlSetengah) {
+                    throw PresensiException::dlSetengahSatuKali();
+                }
+
                 if ($presensi === null || $presensi->jam_masuk === null) {
                     throw PresensiException::belumMasuk();
                 }
 
                 if ($presensi->jam_keluar !== null) {
                     throw PresensiException::sudahKeluar();
+                }
+
+                if ($sekarang->format('H:i:s') < $shift->jam_pulang) {
+                    throw PresensiException::sebelumJamPulang($shift->jam_pulang);
                 }
 
                 $pathFoto = $this->simpanFoto($pegawai, 'keluar', $sekarang, $isiFoto, $ekstensiFoto);

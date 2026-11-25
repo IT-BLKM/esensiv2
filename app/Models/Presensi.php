@@ -65,6 +65,14 @@ class Presensi extends Model
     }
 
     /**
+     * Pengajuan yang melahirkan baris presensi ini (cuti/sakit/dl), bila ada.
+     */
+    public function pengajuan(): BelongsTo
+    {
+        return $this->belongsTo(Pengajuan::class, 'id_pengajuan');
+    }
+
+    /**
      * Batasi query ke data pegawai yang sedang login. Dipakai Action setelah
      * policy `viewAny` lolos; admin sengaja tidak memakai scope ini.
      */

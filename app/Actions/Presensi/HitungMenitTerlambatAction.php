@@ -2,6 +2,7 @@
 
 namespace App\Actions\Presensi;
 
+use App\Models\Pengajuan;
 use App\Models\Presensi;
 use Illuminate\Support\Carbon;
 
@@ -30,6 +31,16 @@ class HitungMenitTerlambatAction
         $shift = $presensi->jamKerja;
 
         if ($shift === null || in_array($shift->kode, $kodeDiabaikan, true)) {
+            return 0;
+        }
+
+        $pengajuan = $presensi->pengajuan;
+
+        if (
+            $pengajuan !== null
+            && $pengajuan->jenis === 'dl'
+            && $pengajuan->mode_dl === Pengajuan::MODE_DL_SETENGAH
+        ) {
             return 0;
         }
 

@@ -44,6 +44,12 @@ class StorePengajuanRequest extends FormRequest
     {
         return [
             'jenis' => ['required', Rule::in(['cuti', 'sakit', 'dl'])],
+            'mode_dl' => [
+                'nullable',
+                Rule::in(['full', 'setengah']),
+                'required_if:jenis,dl',
+                'prohibited_if:jenis,cuti,sakit',
+            ],
             'id_cuti' => [
                 'nullable',
                 'integer',
@@ -78,6 +84,9 @@ class StorePengajuanRequest extends FormRequest
         return [
             'jenis.required' => 'Jenis pengajuan wajib dipilih.',
             'jenis.in' => 'Jenis pengajuan tidak valid.',
+            'mode_dl.in' => 'Mode Dinas Luar tidak valid.',
+            'mode_dl.required_if' => 'Mode Dinas Luar wajib dipilih untuk pengajuan Dinas Luar.',
+            'mode_dl.prohibited_if' => 'Mode Dinas Luar hanya berlaku untuk pengajuan Dinas Luar.',
             'id_cuti.required_if' => 'Jenis cuti wajib dipilih untuk pengajuan cuti.',
             'id_cuti.exists' => 'Jenis cuti tidak ditemukan.',
             'id_cuti.prohibited' => 'Jenis cuti hanya berlaku untuk pengajuan cuti.',

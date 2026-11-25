@@ -3,6 +3,7 @@
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
+use App\Models\Pengajuan;
 use App\Models\Presensi;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -269,7 +270,14 @@ it('uses the office timezone to decide the attendance date', function () {
     $this->travelTo(CarbonImmutable::parse('2026-11-25 18:30:00', 'UTC'));
 
     [$user, $pegawai] = akunStorePresensi();
-    jadwalkanStorePresensi($pegawai, shiftStorePresensi(), 'Kamis');
+    $shift = shiftStorePresensi();
+    $shift->update([
+        'awal_masuk' => '00:00:00',
+        'jam_masuk' => '01:00:00',
+        'akhir_masuk' => '23:59:00',
+        'jam_pulang' => '23:59:00',
+    ]);
+    jadwalkanStorePresensi($pegawai, $shift, 'Kamis');
 
     $this->actingAs($user)
         ->postJson(route('presensi.store'), payloadStorePresensi())
@@ -285,4 +293,160 @@ it('rejects attendance when the account has no pegawai data', function () {
         ->postJson(route('presensi.store'), payloadStorePresensi())
         ->assertStatus(422)
         ->assertJsonPath('type', 'pegawai');
+});
+
+function buatDlSetengahStorePresensi(Pegawai $pegawai, string $mode = 'setengah'): Pengajuan
+{
+    return Pengajuan::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_cuti' => null,
+        'tanggal_mulai' => '2026-11-25',
+        'tanggal_berakhir' => '2026-11-25',
+        'jenis' => 'dl',
+        'mode_dl' => $mode,
+        'keterangan' => 'Dinas luar',
+        'status' => 'approved',
+    ]);
+}
+
+it('rejects a check in before awal_masuk', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 06:59:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi())
+        ->assertStatus(422)
+        ->assertJsonPath('type', 'waktu');
+
+    expect(Presensi::query()->count())->toBe(0)
+        ->and(Storage::disk('local')->allFiles())->toBe([]);
+});
+
+it('rejects a check in after akhir_masuk', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 09:31:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi())
+        ->assertStatus(422)
+        ->assertJsonPath('type', 'waktu');
+
+    expect(Presensi::query()->count())->toBe(0);
+});
+
+it('accepts a late check in until akhir_masuk', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 08:15:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi())
+        ->assertCreated();
+
+    expect(Presensi::query()->sole()->jam_masuk)->toBe('08:15:00');
+});
+
+it('rejects a check out before jam_pulang', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi('masuk'))
+        ->assertCreated();
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 15:59:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi('keluar'))
+        ->assertStatus(422)
+        ->assertJsonPath('type', 'waktu');
+
+    expect(Presensi::query()->sole()->jam_keluar)->toBeNull()
+        ->and(Storage::disk('local')->allFiles())->toHaveCount(1);
+});
+
+it('allows one check in for half day dinas luar and no checkout', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+    $dl = buatDlSetengahStorePresensi($pegawai);
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 10:00:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi('masuk'))
+        ->assertCreated();
+
+    $presensi = Presensi::query()->sole();
+
+    expect($presensi->status)->toBe('hadir')
+        ->and($presensi->id_pengajuan)->toBe($dl->id)
+        ->and($presensi->jam_masuk)->toBe('10:00:00')
+        ->and($presensi->jam_keluar)->toBeNull();
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi('keluar'))
+        ->assertStatus(409)
+        ->assertJsonPath('type', 'dl_setengah');
+});
+
+it('allows half day dinas luar check in before the normal attendance window', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+    buatDlSetengahStorePresensi($pegawai);
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 06:00:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi('masuk'))
+        ->assertCreated();
+
+    expect(Presensi::query()->sole()->jam_masuk)->toBe('06:00:00');
+});
+
+it('rejects half day dinas luar check in after jam_pulang', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+    buatDlSetengahStorePresensi($pegawai);
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-25 16:01:00', 'Asia/Jakarta'));
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi('masuk'))
+        ->assertStatus(422)
+        ->assertJsonPath('type', 'waktu');
+
+    expect(Presensi::query()->count())->toBe(0);
+});
+
+it('refuses attendance when a full day dinas luar row already exists', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    $shift = shiftStorePresensi();
+    jadwalkanStorePresensi($pegawai, $shift);
+    $dl = buatDlSetengahStorePresensi($pegawai, 'full');
+
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'id_pengajuan' => $dl->id,
+        'tgl_presensi' => '2026-11-25',
+        'jam_masuk' => null,
+        'jam_keluar' => null,
+        'foto_masuk' => null,
+        'foto_keluar' => null,
+        'koordinat_masuk' => null,
+        'koordinat_keluar' => null,
+        'status' => 'dl',
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi('masuk'))
+        ->assertStatus(409)
+        ->assertJsonPath('type', 'status');
+
+    expect(Presensi::query()->count())->toBe(1);
 });

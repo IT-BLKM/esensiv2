@@ -3,6 +3,7 @@
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
+use App\Models\Pengajuan;
 use App\Models\Presensi;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -192,4 +193,49 @@ it('protects the attendance endpoint from guests and admins', function () {
     $this->actingAs($admin)->post(route('presensi.store'))
         ->assertRedirect('/admin/dashboard')
         ->assertSessionHas('warning', 'Halaman ini hanya untuk akun pegawai.');
+});
+
+function dlHalamanPresensi(Pegawai $pegawai, string $mode = 'setengah'): Pengajuan
+{
+    return Pengajuan::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_cuti' => null,
+        'tanggal_mulai' => '2026-11-25',
+        'tanggal_berakhir' => '2026-11-25',
+        'jenis' => 'dl',
+        'mode_dl' => $mode,
+        'keterangan' => 'Dinas luar',
+        'status' => 'approved',
+    ]);
+}
+
+it('shows half day dinas luar state before and after the single check in', function () {
+    [$user, $pegawai] = akunHalamanPresensi();
+    $shift = shiftHalamanPresensi();
+    jadwalkanHalamanPresensi($pegawai, $shift);
+    $dl = dlHalamanPresensi($pegawai);
+
+    $this->actingAs($user)->get(route('presensi.index'))
+        ->assertOk()
+        ->assertSee('data-mode="dl-setengah"', false)
+        ->assertSee('data-bisa-absen="1"', false)
+        ->assertSee('DL setengah hari')
+        ->assertSee('Absen Sekali');
+
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'id_pengajuan' => $dl->id,
+        'tgl_presensi' => '2026-11-25',
+        'jam_masuk' => '10:00:00',
+        'jam_keluar' => null,
+        'status' => 'hadir',
+    ]);
+
+    $this->actingAs($user)->get(route('presensi.index'))
+        ->assertOk()
+        ->assertSee('data-mode="dl-setengah-selesai"', false)
+        ->assertSee('data-bisa-absen="0"', false)
+        ->assertSee('DL setengah selesai')
+        ->assertSee('Tidak perlu absen pulang');
 });

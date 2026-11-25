@@ -2,6 +2,7 @@
 
 namespace App\Actions\Presensi;
 
+use Illuminate\Support\Carbon;
 use RuntimeException;
 
 /**
@@ -55,6 +56,52 @@ final class PresensiException extends RuntimeException
     public static function sudahKeluar(): self
     {
         return new self('sudah_keluar', 'Absen pulang hari ini sudah tercatat.', 409);
+    }
+
+    public static function sebelumAwalMasuk(string $awalMasuk): self
+    {
+        return new self(
+            'waktu',
+            'Absen masuk belum dibuka. Jadwal absen masuk mulai pukul '.self::jam($awalMasuk).'.',
+        );
+    }
+
+    public static function setelahAkhirMasuk(string $akhirMasuk): self
+    {
+        return new self(
+            'waktu',
+            'Batas absen masuk sudah lewat pukul '.self::jam($akhirMasuk).'. Hubungi admin bila perlu koreksi.',
+        );
+    }
+
+    public static function sebelumJamPulang(string $jamPulang): self
+    {
+        return new self(
+            'waktu',
+            'Absen pulang belum bisa dilakukan sebelum pukul '.self::jam($jamPulang).'.',
+        );
+    }
+
+    public static function dlSetengahSatuKali(): self
+    {
+        return new self(
+            'dl_setengah',
+            'Dinas Luar setengah hari cukup absen sekali. Absen pulang tidak diperlukan.',
+            409,
+        );
+    }
+
+    public static function dlSetengahLewat(string $jamPulang): self
+    {
+        return new self(
+            'waktu',
+            'Absen Dinas Luar setengah hari hanya sampai pukul '.self::jam($jamPulang).'.',
+        );
+    }
+
+    private static function jam(string $jam): string
+    {
+        return Carbon::parse($jam)->format('H:i');
     }
 
     public static function statusHariIni(string $status): self

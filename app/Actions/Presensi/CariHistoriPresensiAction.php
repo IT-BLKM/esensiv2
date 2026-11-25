@@ -40,7 +40,7 @@ class CariHistoriPresensiAction
         $akhirBulan = $awalBulan->endOfMonth();
 
         return Presensi::query()
-            ->with('jamKerja')
+            ->with(['jamKerja', 'pengajuan'])
             ->where('id_pegawai', $pegawai->id)
             ->whereBetween('tgl_presensi', [$awalBulan->toDateString(), $akhirBulan->toDateString()])
             ->orderByDesc('tgl_presensi')

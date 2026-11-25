@@ -38,7 +38,7 @@
                     @enderror
                 </div>
 
-                <div>
+                <div id="blok-jenis-cuti">
                     <label for="id_cuti" class="block text-sm font-medium text-gray-700">Jenis cuti</label>
                     <select
                         id="id_cuti"
@@ -73,7 +73,32 @@
                     @enderror
                 </div>
 
-                <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                <div id="blok-mode-dl" class="hidden">
+                    <label for="mode_dl" class="block text-sm font-medium text-gray-700">Mode Dinas Luar</label>
+                    <select
+                        id="mode_dl"
+                        name="mode_dl"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
+                        @error('mode_dl') aria-invalid="true" @enderror
+                    >
+                        <option value="">-- Pilih mode dinas luar --</option>
+                        <option value="full" @selected(old('mode_dl') === 'full')>
+                            Penuh — tidak perlu absen
+                        </option>
+                        <option value="setengah" @selected(old('mode_dl') === 'setengah')>
+                            Setengah hari — absen sekali
+                        </option>
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">
+                        Penuh: hari kerja dianggap Dinas Luar dan tidak perlu presensi.
+                        Setengah: cukup absen sekali pada hari itu, tanpa absen pulang dan tidak dihitung terlambat.
+                    </p>
+                    @error('mode_dl')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div id="blok-alasan-haji" class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                     <label for="alasan_haji" class="flex items-start gap-2 text-sm text-gray-700">
                         <input
                             type="checkbox"
@@ -163,4 +188,8 @@
             </form>
         </x-card>
     </div>
+
+    @push('scripts')
+        @vite('resources/js/pengajuan.js')
+    @endpush
 </x-layouts.pegawai>
