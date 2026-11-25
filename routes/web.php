@@ -12,6 +12,7 @@ use App\Http\Controllers\Pegawai\DashboardController;
 use App\Http\Controllers\Pegawai\LaporanController;
 use App\Http\Controllers\Pegawai\PengajuanController;
 use App\Http\Controllers\Pegawai\PresensiController;
+use App\Http\Controllers\Pegawai\PresensiHalamanController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -31,7 +32,17 @@ Route::middleware('auth')->group(function () {
      * bottom nav tidak pernah rusak.
      */
     Route::middleware('role:pegawai')->group(function () {
-        Route::get('/presensi', fn () => view('pegawai.presensi'))->name('presensi.index');
+        Route::get('/presensi', PresensiHalamanController::class)->name('presensi.index');
+
+        /*
+         * Endpoint dummy untuk issue #31 (UI saja). Bentuk request (POST +
+         * CSRF + jenis/foto/koordinat) sudah final; issue #32 mengganti isi
+         * closure ini dengan StorePresensiAction tanpa mengubah form.
+         */
+        Route::post('/presensi', fn () => response()->json([
+            'message' => 'Penyimpanan presensi belum aktif. Integrasi server ada di issue #32.',
+        ], 501))->name('presensi.store');
+
         Route::get('/histori', fn () => view('pegawai.histori'))->name('histori.index');
         Route::get('/pengajuan', fn () => view('pegawai.pengajuan'))->name('pengajuan.index');
         Route::get('/profil', fn () => view('pegawai.profil'))->name('profil');

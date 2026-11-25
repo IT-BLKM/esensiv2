@@ -73,5 +73,7 @@
             @endforeach
         </ul>
     </nav>
+
+    @stack('scripts')
 </body>
 </html>
