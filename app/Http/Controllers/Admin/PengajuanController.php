@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Cuti\HitungSisaCutiAction;
 use App\Actions\Pengajuan\ApprovePengajuanAction;
 use App\Actions\Pengajuan\CancelApprovalPengajuanAction;
 use App\Actions\Pengajuan\CariPengajuanAdminAction;
+use App\Actions\Pengajuan\CreatePengajuanAction;
 use App\Actions\Pengajuan\DaftarHariKerjaAction;
 use App\Actions\Pengajuan\RejectPengajuanAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DaftarPengajuanAdminRequest;
 use App\Http\Requests\SetujuiPengajuanRequest;
+use App\Http\Requests\StorePengajuanAdminRequest;
 use App\Http\Requests\TolakPengajuanRequest;
+use App\Models\Cuti;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\Presensi;
@@ -49,6 +53,52 @@ class PengajuanController extends Controller
             'tanggalSampai' => $tanggalSampai,
             'daftarPegawai' => Pegawai::query()->orderBy('nama')->get(['id', 'nip', 'nama']),
         ]);
+    }
+
+    /**
+     * Form admin membuat pengajuan atas nama pegawai (issue #104).
+     */
+    public function create(Request $request, HitungSisaCutiAction $hitungSisaCuti): View
+    {
+        Gate::authorize('create', Pengajuan::class);
+
+        $idPegawai = $request->integer('id_pegawai') ?: null;
+        $daftarPegawai = Pegawai::query()->orderBy('nama')->get(['id', 'nip', 'nama']);
+        $pegawai = $idPegawai === null
+            ? null
+            : $daftarPegawai->firstWhere('id', $idPegawai);
+
+        $cuti = Cuti::query()->orderBy('kode')->get(['id', 'kode', 'nama', 'kuota', 'maks_hari']);
+        $tahun = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'))->year;
+        $sisa = [];
+
+        if ($pegawai !== null) {
+            foreach ($cuti as $item) {
+                $sisa[$item->id] = $hitungSisaCuti($pegawai, $item, $tahun);
+            }
+        }
+
+        return view('admin.pengajuan-create', [
+            'daftarPegawai' => $daftarPegawai,
+            'idPegawai' => $idPegawai,
+            'cuti' => $cuti,
+            'sisa' => $sisa,
+            'tahunTampil' => $tahun,
+            'adaPegawai' => $pegawai !== null,
+        ]);
+    }
+
+    public function store(StorePengajuanAdminRequest $request, CreatePengajuanAction $create): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $data = $request->validated();
+        $pegawai = Pegawai::query()->findOrFail((int) $data['id_pegawai']);
+
+        $pengajuan = $create($user, $data, $pegawai);
+
+        return redirect()->route('admin.pengajuan.show', $pengajuan)
+            ->with('success', "Pengajuan untuk {$pegawai->nama} berhasil dibuat dan menunggu persetujuan.");
     }
 
     public function show(Pengajuan $pengajuan, DaftarHariKerjaAction $daftarHariKerja): View

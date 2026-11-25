@@ -1,8 +1,17 @@
 <x-layouts.admin title="Pengajuan">
     <div class="flex flex-col gap-4">
-        <div>
-            <h1 class="text-xl font-semibold text-gray-900">Pengajuan</h1>
-            <p class="mt-1 text-sm text-gray-600">Tinjau dan putuskan pengajuan cuti, sakit, dan dinas luar pegawai.</p>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-semibold text-gray-900">Pengajuan</h1>
+                <p class="mt-1 text-sm text-gray-600">Tinjau dan putuskan pengajuan cuti, sakit, dan dinas luar pegawai.</p>
+            </div>
+
+            <a
+                href="{{ route('admin.pengajuan.create') }}"
+                class="inline-flex items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-900 transition-colors hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-800"
+            >
+                Buat pengajuan
+            </a>
         </div>
 
         <x-card title="Filter" subtitle="Default menampilkan pengajuan yang menunggu keputusan.">
