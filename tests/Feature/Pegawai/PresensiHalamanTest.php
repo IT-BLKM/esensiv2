@@ -90,11 +90,20 @@ it('renders the camera, map, and masuk state for an eligible pegawai', function 
         ->assertSee('id="video-presensi"', false)
         ->assertSee('id="peta-presensi"', false)
         ->assertSee('id="tombol-absen"', false)
+        ->assertSee('id="tombol-muat-model"', false)
+        ->assertSee('id="wadah-muat-model"', false)
+        ->assertSee('Minta izin lokasi')
+        ->assertSee('Wajah wajib terdeteksi')
         ->assertSee('Belum absen')
         ->assertSee('Absen Masuk')
         ->assertSee('Shift Pagi')
         ->assertSee('07:30')
         ->assertSee('Foto dan lokasi divalidasi ulang di server sebelum disimpan.');
+
+    $html = $response->getContent();
+
+    expect(strpos($html, 'id="video-presensi"'))->toBeLessThan(strpos($html, 'id="peta-presensi"'))
+        ->and(strpos($html, 'id="form-presensi"'))->toBeLessThan(strpos($html, 'id="peta-presensi"'));
 
     expect(tombolAbsenNonaktif($response->getContent()))->toBeTrue();
 });

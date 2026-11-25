@@ -39,6 +39,8 @@ function mulaiPresensi(root) {
     const video = document.getElementById('video-presensi');
     const placeholder = document.getElementById('placeholder-kamera');
     const tombolKamera = document.getElementById('tombol-kamera');
+    const tombolMuatModel = document.getElementById('tombol-muat-model');
+    const wadahMuatModel = document.getElementById('wadah-muat-model');
     const statusWajah = document.getElementById('status-wajah');
     const pesanKamera = document.getElementById('pesan-kamera');
     const pesanModel = document.getElementById('pesan-model');
@@ -137,7 +139,7 @@ function mulaiPresensi(root) {
         }
 
         if (state.modelGagal) {
-            statusWajah.textContent = 'Deteksi wajah tidak tersedia — absen tetap bisa dilakukan.';
+            statusWajah.textContent = 'Deteksi wajah gagal dimuat. Tekan "Muat ulang model wajah".';
 
             return;
         }
@@ -158,7 +160,7 @@ function mulaiPresensi(root) {
             return;
         }
 
-        const wajahSiap = state.modelGagal || state.wajahTerdeteksi;
+        const wajahSiap = state.modelSiap && state.wajahTerdeteksi;
         const alasan = [];
 
         if (!state.kameraSiap) {
@@ -170,7 +172,7 @@ function mulaiPresensi(root) {
         }
 
         if (!wajahSiap) {
-            alasan.push(state.modelGagal ? 'deteksi wajah tidak tersedia' : 'hadapkan wajah');
+            alasan.push(state.modelGagal ? 'muat ulang model wajah' : 'hadapkan wajah sampai terdeteksi');
         }
 
         const siap = alasan.length === 0;
@@ -333,6 +335,7 @@ function mulaiPresensi(root) {
                 state.modelGagal = true;
                 state.wajahTerdeteksi = false;
                 pesanModel?.classList.remove('hidden');
+                wadahMuatModel?.classList.remove('hidden');
                 perbaruiStatusWajah();
                 perbaruiTombol();
 
@@ -482,7 +485,7 @@ function mulaiPresensi(root) {
             (error) => {
                 tampilkan(pesanLokasi, pesanLokasiGagal(error));
                 tombolLokasi.disabled = false;
-                tombolLokasi.textContent = 'Ambil lokasi';
+                tombolLokasi.textContent = 'Minta izin lokasi';
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
         );
@@ -510,14 +513,14 @@ function mulaiPresensi(root) {
             return;
         }
 
-        if (state.modelSiap && !state.wajahTerdeteksi) {
-            tampilkan(pesanPresensi, 'Wajah belum terdeteksi. Arahkan wajah ke kamera lalu coba lagi.');
+        if (!state.modelSiap || !state.wajahTerdeteksi) {
+            tampilkan(pesanPresensi, 'Wajah wajib terdeteksi sebelum absen. Arahkan wajah ke kamera lalu coba lagi.');
 
             return;
         }
 
         if (!state.lokasiSiap) {
-            tampilkan(pesanPresensi, 'Lokasi belum diambil. Tekan "Ambil lokasi" lalu coba lagi.');
+            tampilkan(pesanPresensi, 'Lokasi belum didapat. Tekan "Minta izin lokasi" lalu coba lagi.');
 
             return;
         }
@@ -592,6 +595,7 @@ function mulaiPresensi(root) {
 
     tombolKamera?.addEventListener('click', nyalakanKamera);
     tombolLokasi?.addEventListener('click', ambilLokasi);
+    tombolMuatModel?.addEventListener('click', muatModel);
     form?.addEventListener('submit', kirimPresensi);
 
     window.addEventListener('pagehide', () => {
@@ -604,4 +608,8 @@ function mulaiPresensi(root) {
 
     muatModel();
     perbaruiTombol();
+
+    if (bisaAbsen) {
+        ambilLokasi();
+    }
 }
