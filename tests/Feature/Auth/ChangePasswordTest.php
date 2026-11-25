@@ -23,6 +23,8 @@ it('shows the change password form to the authenticated user', function () {
         ->assertSee('Password lama')
         ->assertSee('Password baru')
         ->assertSee('Simpan password')
+        ->assertSee('Kembali ke beranda')
+        ->assertSee(route('dashboard'), false)
         ->assertSee(route('password.update'), false);
 });
 

@@ -3,9 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Pegawai;
-use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +27,13 @@ class UpdatePegawaiRequest extends FormRequest
 
         return [
             'nip' => ['required', 'string', 'size:18', 'regex:/^\d{18}$/', Rule::unique('pegawai', 'nip')->ignore($pegawai->id)],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('user', 'email')->ignore($pegawai->user_id),
+            ],
             'nama' => ['required', 'string', 'max:255'],
             'jabatan' => ['required', 'string', 'max:255'],
             'id_dept' => ['required', 'integer', 'exists:departemen,id'],
@@ -48,6 +53,11 @@ class UpdatePegawaiRequest extends FormRequest
             'nip.size' => 'NIP harus terdiri dari 18 digit.',
             'nip.regex' => 'NIP hanya boleh berisi angka.',
             'nip.unique' => 'NIP sudah digunakan pegawai lain.',
+            'email.required' => 'Email wajib diisi.',
+            'email.string' => 'Email harus berupa teks.',
+            'email.email' => 'Format email tidak valid.',
+            'email.max' => 'Email maksimal 255 karakter.',
+            'email.unique' => 'Email sudah digunakan akun lain.',
             'nama.required' => 'Nama wajib diisi.',
             'nama.string' => 'Nama harus berupa teks.',
             'nama.max' => 'Nama maksimal 255 karakter.',
@@ -64,30 +74,6 @@ class UpdatePegawaiRequest extends FormRequest
             'foto.image' => 'Foto harus berupa gambar.',
             'foto.mimes' => 'Foto harus berformat JPG, JPEG, atau PNG.',
             'foto.max' => 'Ukuran foto maksimal 2 MB.',
-        ];
-    }
-
-    /**
-     * @return array<int, callable(Validator): void>
-     */
-    public function after(): array
-    {
-        return [
-            function (Validator $validator): void {
-                if ($validator->errors()->has('nip')) {
-                    return;
-                }
-
-                /** @var Pegawai $pegawai */
-                $pegawai = $this->route('pegawai');
-                $email = $this->string('nip')->toString().'@presensi.test';
-
-                if (User::where('email', $email)
-                    ->where('id', '!=', $pegawai->user_id)
-                    ->exists()) {
-                    $validator->errors()->add('nip', 'NIP sudah memiliki akun pengguna.');
-                }
-            },
         ];
     }
 }

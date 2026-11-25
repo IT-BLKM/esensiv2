@@ -13,13 +13,14 @@ class UpdatePegawaiAction
      * Perbarui pegawai, sinkronkan nama/email user, dan ganti foto bila diunggah.
      * Password tidak pernah disentuh oleh update biasa.
      *
-     * @param  array{nip: string, nama: string, jabatan: string, id_dept: int, no_hp: string, foto?: UploadedFile|null}  $data
+     * @param  array{nip: string, email: string, nama: string, jabatan: string, id_dept: int, no_hp: string, foto?: UploadedFile|null}  $data
      */
     public function __invoke(Pegawai $pegawai, array $data): Pegawai
     {
         $fotoLama = $pegawai->foto;
         $fotoBaru = $data['foto'] ?? null;
-        unset($data['foto']);
+        $email = $data['email'];
+        unset($data['foto'], $data['email']);
 
         $fotoPath = null;
 
@@ -31,11 +32,10 @@ class UpdatePegawaiAction
             }
         }
 
-        DB::transaction(function () use ($pegawai, $data): void {
+        DB::transaction(function () use ($pegawai, $data, $email): void {
             $pegawai->update($data);
 
             $user = $pegawai->user;
-            $email = "{$pegawai->nip}@presensi.test";
 
             if ($user !== null && ($user->nama !== $pegawai->nama || $user->email !== $email)) {
                 $user->update([
