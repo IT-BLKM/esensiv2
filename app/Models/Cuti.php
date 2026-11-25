@@ -12,6 +12,15 @@ class Cuti extends Model
     /** @use HasFactory<CutiFactory> */
     use HasFactory;
 
+    /** Kode jenis cuti yang aturannya khusus di HitungSisaCutiAction. */
+    public const KODE_TAHUNAN = 'C01';
+
+    public const KODE_BERSALIN = 'C02';
+
+    public const KODE_ALASAN_PENTING = 'C03';
+
+    public const KODE_BESAR = 'C04';
+
     /**
      * Nama tabel eksplisit sesuai spesifikasi Database Esensi.
      */
