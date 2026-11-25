@@ -101,9 +101,9 @@ class DatabaseSeeder extends Seeder
 
         return Cuti::factory()->count(4)->sequence(
             ['kode' => 'C01', 'nama' => 'Cuti Tahunan', 'maks_hari' => 12, 'kuota' => 12, 'maks_bawa' => 6],
-            ['kode' => 'C02', 'nama' => 'Cuti Bersalin', 'maks_hari' => 90, 'kuota' => null, 'maks_bawa' => 0],
-            ['kode' => 'C03', 'nama' => 'Cuti Alasan Penting', 'maks_hari' => null, 'kuota' => null, 'maks_bawa' => 0],
-            ['kode' => 'C04', 'nama' => 'Cuti Besar', 'maks_hari' => 90, 'kuota' => null, 'maks_bawa' => 0],
+            ['kode' => 'C02', 'nama' => 'Cuti Bersalin', 'maks_hari' => 90, 'kuota' => 90, 'maks_bawa' => 0],
+            ['kode' => 'C03', 'nama' => 'Cuti Alasan Penting', 'maks_hari' => 30, 'kuota' => 30, 'maks_bawa' => 0],
+            ['kode' => 'C04', 'nama' => 'Cuti Besar', 'maks_hari' => 90, 'kuota' => 90, 'maks_bawa' => 0],
         )->create();
     }
 
