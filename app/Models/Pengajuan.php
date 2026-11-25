@@ -44,6 +44,22 @@ class Pengajuan extends Model
     }
 
     /**
+     * Jenis cuti untuk pengajuan `jenis=cuti` (null untuk sakit/dl).
+     */
+    public function cuti(): BelongsTo
+    {
+        return $this->belongsTo(Cuti::class, 'id_cuti');
+    }
+
+    /**
+     * Admin yang menyetujui/menolak pengajuan.
+     */
+    public function penyetuju(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'disetujui_oleh');
+    }
+
+    /**
      * Batasi query ke data pegawai yang sedang login. Dipakai Action setelah
      * policy `viewAny` lolos; admin sengaja tidak memakai scope ini.
      */

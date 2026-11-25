@@ -1,166 +1,167 @@
 <x-layouts.pegawai title="Pengajuan">
     <div class="flex flex-col gap-4">
-        <div>
-            <h1 class="text-xl font-semibold text-gray-900">Pengajuan</h1>
-            <p class="mt-1 text-sm text-gray-600">Ajukan cuti, sakit, atau dinas luar beserta lampirannya.</p>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-semibold text-gray-900">Pengajuan</h1>
+                <p class="mt-1 text-sm text-gray-600">Daftar pengajuan cuti, sakit, dan dinas luar milik Anda.</p>
+            </div>
+
+            @if ($adaPegawai)
+                <a
+                    href="{{ route('pengajuan.create') }}"
+                    class="inline-flex items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-900 transition-colors hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-800"
+                >
+                    Buat pengajuan
+                </a>
+            @endif
         </div>
 
         @if (! $adaPegawai)
             <x-alert variant="warning" title="Data pegawai belum tersedia">
-                Akun ini belum tertaut ke data pegawai. Hubungi administrator sebelum mengirim pengajuan.
+                Akun ini belum tertaut ke data pegawai, jadi daftar pengajuan belum bisa ditampilkan.
+                Hubungi administrator untuk melengkapi data.
             </x-alert>
-        @endif
-
-        @if ($cuti->isEmpty())
-            <x-alert variant="warning" title="Jenis cuti belum tersedia">
-                Hubungi administrator untuk menambah master jenis cuti sebelum mengajukan cuti.
-            </x-alert>
-        @endif
-
-        <x-card title="Form pengajuan" subtitle="Pilih jenis, rentang tanggal, dan lampiran yang diminta.">
-            <form method="POST" action="{{ route('pengajuan.store') }}" enctype="multipart/form-data" class="flex flex-col gap-4" novalidate>
-                @csrf
-
-                <div>
-                    <label for="jenis" class="block text-sm font-medium text-gray-700">Jenis pengajuan</label>
-                    <select
-                        id="jenis"
-                        name="jenis"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
-                        @error('jenis') aria-invalid="true" @enderror
-                    >
-                        <option value="cuti" @selected(old('jenis', 'cuti') === 'cuti')>Cuti</option>
-                        <option value="sakit" @selected(old('jenis') === 'sakit')>Sakit</option>
-                        <option value="dl" @selected(old('jenis') === 'dl')>Dinas Luar</option>
-                    </select>
-                    @error('jenis')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="id_cuti" class="block text-sm font-medium text-gray-700">Jenis cuti</label>
-                    <select
-                        id="id_cuti"
-                        name="id_cuti"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
-                        @error('id_cuti') aria-invalid="true" @enderror
-                    >
-                        <option value="">-- Pilih jenis cuti --</option>
-                        @foreach ($cuti as $item)
-                            @php($ringkas = $sisa[$item->id] ?? null)
-                            @php($tersedia = $ringkas['totalTersedia'] ?? null)
-                            <option value="{{ $item->id }}" @selected((string) old('id_cuti') === (string) $item->id)>
-                                {{ $item->kode }} — {{ $item->nama }}@if ($adaPegawai && $tersedia !== null) (tersedia {{ $tersedia }} hari)@elseif ($adaPegawai) (tanpa batas kuota)@endif
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="mt-1 text-xs text-gray-500">Wajib diisi bila jenis pengajuan Cuti. Kosongkan untuk Sakit dan Dinas Luar.</p>
-
-                    @php($cutiTahunan = $cuti->firstWhere('kode', 'C01'))
-                    @php($ringkasTahunan = $cutiTahunan === null ? null : ($sisa[$cutiTahunan->id] ?? null))
-
-                    @if ($adaPegawai && $ringkasTahunan !== null)
-                        <p class="mt-1 text-xs text-gray-500">
-                            Sisa kuota tahun {{ $tahunTampil }}: <strong class="text-gray-700">{{ $ringkasTahunan['sisaKuota'] }} hari</strong>;
-                            maksimal terbawa ke {{ $tahunTampil + 1 }}: <strong class="text-gray-700">{{ $ringkasTahunan['maksBawaTahunDepan'] }} hari</strong>.
-                            Total tersedia termasuk tabungan: {{ $ringkasTahunan['totalTersedia'] }} hari.
-                        </p>
-                    @endif
-
-                    @error('id_cuti')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                    <label for="alasan_haji" class="flex items-start gap-2 text-sm text-gray-700">
-                        <input
-                            type="checkbox"
-                            id="alasan_haji"
-                            name="alasan_haji"
-                            value="1"
-                            @checked(old('alasan_haji'))
-                            class="mt-0.5 h-4 w-4 rounded border-gray-300 accent-brand-600"
+        @else
+            <x-card title="Filter" subtitle="Saring berdasarkan status atau periode pengajuan.">
+                <form method="GET" action="{{ route('pengajuan.index') }}" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div class="sm:flex-1">
+                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                        <select
+                            id="status"
+                            name="status"
+                            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
                         >
-                        <span>
-                            <span class="font-medium text-gray-900">Cuti Besar dengan alasan haji</span>
-                            <span class="block text-xs text-gray-600">
-                                Centang hanya untuk Cuti Besar (C04). Tanpa centang, C04 mensyaratkan
-                                5 tahun tidak pernah mengambil cuti besar.
-                            </span>
-                        </span>
-                    </label>
-                    @error('alasan_haji')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label for="tanggal_mulai" class="block text-sm font-medium text-gray-700">Tanggal mulai</label>
-                        <x-input
-                            type="date"
-                            name="tanggal_mulai"
-                            id="tanggal_mulai"
-                            value="{{ old('tanggal_mulai') }}"
-                            :invalid="$errors->has('tanggal_mulai')"
-                        />
-                        @error('tanggal_mulai')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <option value="">Semua status</option>
+                            <option value="pending" @selected($status === 'pending')>Menunggu</option>
+                            <option value="approved" @selected($status === 'approved')>Disetujui</option>
+                            <option value="rejected" @selected($status === 'rejected')>Ditolak</option>
+                        </select>
+                        @error('status')
+                            <p class="mt-1 text-sm text-gray-700">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div>
-                        <label for="tanggal_berakhir" class="block text-sm font-medium text-gray-700">Tanggal berakhir</label>
-                        <x-input
-                            type="date"
-                            name="tanggal_berakhir"
-                            id="tanggal_berakhir"
-                            value="{{ old('tanggal_berakhir') }}"
-                            :invalid="$errors->has('tanggal_berakhir')"
-                        />
-                        @error('tanggal_berakhir')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <div class="sm:flex-1">
+                        <label for="bulan" class="block text-sm font-medium text-gray-700">Bulan</label>
+                        <select
+                            id="bulan"
+                            name="bulan"
+                            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
+                        >
+                            <option value="">Semua bulan</option>
+                            @foreach ($pilihanBulan as $nilai => $label)
+                                <option value="{{ $nilai }}" @selected($bulan === $nilai)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('bulan')
+                            <p class="mt-1 text-sm text-gray-700">{{ $message }}</p>
                         @enderror
                     </div>
-                </div>
 
-                <div>
-                    <label for="keterangan" class="block text-sm font-medium text-gray-700">Keterangan</label>
-                    <textarea
-                        id="keterangan"
-                        name="keterangan"
-                        rows="3"
-                        maxlength="255"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs placeholder:text-gray-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
-                        @error('keterangan') aria-invalid="true" @enderror
-                    >{{ old('keterangan') }}</textarea>
-                    @error('keterangan')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+                    <div class="sm:flex-1">
+                        <label for="tahun" class="block text-sm font-medium text-gray-700">Tahun</label>
+                        <select
+                            id="tahun"
+                            name="tahun"
+                            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
+                        >
+                            <option value="">Semua tahun</option>
+                            @foreach ($pilihanTahun as $nilai)
+                                <option value="{{ $nilai }}" @selected($tahun === $nilai)>{{ $nilai }}</option>
+                            @endforeach
+                        </select>
+                        @error('tahun')
+                            <p class="mt-1 text-sm text-gray-700">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-                <div>
-                    <label for="lampiran" class="block text-sm font-medium text-gray-700">Lampiran</label>
-                    <x-input
-                        type="file"
-                        name="lampiran"
-                        id="lampiran"
-                        accept=".jpg,.jpeg,.png,.pdf"
-                        :invalid="$errors->has('lampiran')"
-                    />
-                    <p class="mt-1 text-xs text-gray-500">Wajib untuk Sakit dan Cuti Alasan Penting. Format JPG/JPEG/PNG/PDF, maksimal 2 MB.</p>
-                    @error('lampiran')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+                    <x-button type="submit" variant="primary" size="sm">Tampilkan</x-button>
+                </form>
+            </x-card>
 
-                <div class="flex items-center gap-3">
-                    <x-button type="submit">Kirim pengajuan</x-button>
-                    <a href="{{ route('pengajuan.index') }}" class="text-sm font-medium text-brand-700 hover:text-brand-800">Batal</a>
-                </div>
-            </form>
-        </x-card>
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 class="text-sm font-semibold text-gray-900">Daftar pengajuan</h2>
+                <p class="text-xs text-gray-600">{{ $pengajuan->count() }} pengajuan</p>
+            </div>
+
+            @if ($pengajuan->isEmpty())
+                <x-alert variant="info">
+                    Belum ada pengajuan yang cocok dengan filter ini.
+                    <a href="{{ route('pengajuan.create') }}" class="font-medium text-brand-700 underline underline-offset-4 hover:text-brand-800">
+                        Buat pengajuan baru
+                    </a>.
+                </x-alert>
+            @else
+                <x-table>
+                    <thead>
+                        <tr>
+                            <x-table.th>Tanggal</x-table.th>
+                            <x-table.th>Jenis</x-table.th>
+                            <x-table.th align="center">Status</x-table.th>
+                            <x-table.th align="center">Lampiran</x-table.th>
+                            <x-table.th align="right">Aksi</x-table.th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach ($pengajuan as $item)
+                            @php
+                                $labelStatus = match ($item->status) {
+                                    'pending' => 'Menunggu',
+                                    'approved' => 'Disetujui',
+                                    'rejected' => 'Ditolak',
+                                    default => ucfirst($item->status),
+                                };
+
+                                $variantStatus = match ($item->status) {
+                                    'approved' => 'success',
+                                    'rejected' => 'danger',
+                                    default => 'warning',
+                                };
+
+                                $labelJenis = match ($item->jenis) {
+                                    'cuti' => $item->cuti?->nama ?? 'Cuti',
+                                    'sakit' => 'Sakit',
+                                    'dl' => 'Dinas Luar',
+                                    default => ucfirst($item->jenis),
+                                };
+
+                                $mulai = \Illuminate\Support\Carbon::parse((string) $item->tanggal_mulai)->locale('id');
+                                $akhir = \Illuminate\Support\Carbon::parse((string) $item->tanggal_berakhir)->locale('id');
+                            @endphp
+
+                            <tr>
+                                <x-table.td>
+                                    <span class="font-medium text-gray-900">{{ $mulai->translatedFormat('d M Y') }}</span>
+                                    @if ($item->tanggal_mulai !== $item->tanggal_berakhir)
+                                        <span class="block text-xs text-gray-600">
+                                            s.d. {{ $akhir->translatedFormat('d M Y') }}
+                                        </span>
+                                    @endif
+                                </x-table.td>
+                                <x-table.td>{{ $labelJenis }}</x-table.td>
+                                <x-table.td align="center">
+                                    <x-badge :variant="$variantStatus">{{ $labelStatus }}</x-badge>
+                                </x-table.td>
+                                <x-table.td align="center">
+                                    @if ($item->lampiran !== null)
+                                        <x-badge variant="info">Ada</x-badge>
+                                    @else
+                                        <span class="text-gray-500">—</span>
+                                    @endif
+                                </x-table.td>
+                                <x-table.td align="right">
+                                    <a
+                                        href="{{ route('pengajuan.show', $item) }}"
+                                        class="font-medium text-brand-700 underline underline-offset-4 hover:text-brand-800"
+                                    >
+                                        Detail
+                                    </a>
+                                </x-table.td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </x-table>
+            @endif
+        @endif
     </div>
 </x-layouts.pegawai>

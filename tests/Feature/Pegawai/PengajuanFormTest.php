@@ -44,7 +44,7 @@ it('redirects guests away from the pengajuan form', function () {
 });
 
 it('renders the multipart form with every pengajuan field', function () {
-    $this->actingAs($this->user)->get(route('pengajuan.index'))
+    $this->actingAs($this->user)->get(route('pengajuan.create'))
         ->assertOk()
         ->assertSee('Form pengajuan')
         ->assertSee(route('pengajuan.store'), false)
@@ -117,7 +117,7 @@ it('requires a lampiran when the pengajuan is sakit', function () {
 it('warns an unlinked account and refuses to store its pengajuan', function () {
     $tanpaPegawai = User::factory()->create(['role' => 'pegawai']);
 
-    $this->actingAs($tanpaPegawai)->get(route('pengajuan.index'))
+    $this->actingAs($tanpaPegawai)->get(route('pengajuan.create'))
         ->assertOk()
         ->assertSee('Data pegawai belum tersedia');
 
@@ -129,6 +129,6 @@ it('warns an unlinked account and refuses to store its pengajuan', function () {
 it('keeps admin on the admin side of the application', function () {
     $admin = User::factory()->create(['role' => 'admin']);
 
-    $this->actingAs($admin)->get(route('pengajuan.index'))
+    $this->actingAs($admin)->get(route('pengajuan.create'))
         ->assertRedirect(route('admin.dashboard'));
 });

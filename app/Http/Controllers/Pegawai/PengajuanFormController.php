@@ -23,11 +23,6 @@ class PengajuanFormController extends Controller
 {
     public function __construct(private readonly HitungSisaCutiAction $hitungSisaCuti) {}
 
-    public function index(Request $request): View
-    {
-        return $this->form($request);
-    }
-
     public function create(Request $request): View
     {
         return $this->form($request);
@@ -67,7 +62,7 @@ class PengajuanFormController extends Controller
             }
         }
 
-        return view('pegawai.pengajuan', [
+        return view('pegawai.pengajuan-create', [
             'cuti' => $cuti,
             'sisa' => $sisa,
             'tahunTampil' => $tahun,
