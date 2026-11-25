@@ -91,11 +91,7 @@ class RekapKehadiranAction
      */
     public function __invoke(Pegawai $pegawai): array
     {
-        /*
-         * Tanggal absensi dinilai pada zona waktu kantor, bukan zona waktu
-         * aplikasi (config/app.php masih UTC). Lihat config/presensi.php.
-         */
-        $sekarang = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'));
+        $sekarang = $this->sekarang();
         $kodeDiabaikan = $this->kodeJamKerjaDiabaikan();
 
         $presensiTahun = Presensi::query()
@@ -125,6 +121,41 @@ class RekapKehadiranAction
             'bulanIni' => $this->ringkasBulanan($presensiBulan, $sekarang, $kodeDiabaikan),
             'tahunIni' => $this->ringkasTahunan($presensiTahun, $sekarang, $kodeDiabaikan),
         ];
+    }
+
+    /**
+     * Data kartu "hari ini" saja — dipakai halaman presensi (#31) supaya
+     * status masuk/keluar dan shift berasal dari perhitungan yang sama
+     * dengan dashboard (#34).
+     *
+     * @return array{
+     *     tanggal: string,
+     *     labelTanggal: string,
+     *     shift: array{kode: string, nama: string, jamMasuk: string, jamPulang: string}|null,
+     *     status: string|null,
+     *     statusLabel: string|null,
+     *     jamMasuk: string|null,
+     *     jamKeluar: string|null,
+     *     menitTerlambat: int,
+     *     terlambat: bool
+     * }
+     */
+    public function hariIni(Pegawai $pegawai): array
+    {
+        $sekarang = $this->sekarang();
+
+        $presensi = Presensi::query()
+            ->with('jamKerja')
+            ->where('id_pegawai', $pegawai->id)
+            ->where('tgl_presensi', $sekarang->toDateString())
+            ->first();
+
+        return $this->ringkasHariIni(
+            $sekarang,
+            $this->shiftHariIni($pegawai, $sekarang),
+            $presensi,
+            $this->kodeJamKerjaDiabaikan(),
+        );
     }
 
     /**
@@ -283,6 +314,15 @@ class RekapKehadiranAction
             ->where('hari', $namaHari)
             ->first()
             ?->jamKerja;
+    }
+
+    /**
+     * Tanggal absensi dinilai pada zona waktu kantor, bukan zona waktu
+     * aplikasi (config/app.php masih UTC). Lihat config/presensi.php.
+     */
+    private function sekarang(): CarbonImmutable
+    {
+        return CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'));
     }
 
     /**
