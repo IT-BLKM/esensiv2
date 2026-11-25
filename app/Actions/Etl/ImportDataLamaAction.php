@@ -243,8 +243,18 @@ class ImportDataLamaAction
 
             $nama = $this->teks($baris['nama_lengkap'] ?? null);
             $email = $nip.'@presensi.test';
+            $passwordLama = $this->teks($baris['password'] ?? null);
 
-            // Satu user per pegawai; password acak (tidak diketahui siapa pun → reset lewat issue #21)
+            /*
+             * Keputusan QA: password lama dipertahankan agar pegawai tidak
+             * semua harus reset. Hash bcrypt/argon dari aplikasi lama dipakai
+             * apa adanya; bila kosong/tidak dikenal, fallback ke password acak.
+             */
+            $password = $this->hashPasswordLamaValid($passwordLama)
+                ? $passwordLama
+                : Hash::make(Str::random(32));
+
+            // Satu user per pegawai.
             if (isset($this->userId[$email])) {
                 $report->catatTabel('user', false);
             } elseif (isset($this->adaUser[$email])) {
@@ -256,7 +266,7 @@ class ImportDataLamaAction
                 $this->userId[$email] = DB::table('user')->insertGetId([
                     'nama' => $nama,
                     'email' => $email,
-                    'password' => Hash::make(Str::random(32)),
+                    'password' => $password,
                     'role' => 'pegawai',
                     'created_at' => $this->waktu,
                     'updated_at' => $this->waktu,
@@ -858,6 +868,21 @@ class ImportDataLamaAction
     /**
      * Nilai teks dari dump: null → string kosong, sisanya di-trim.
      */
+    /**
+     * Hash password lama dianggap valid bila algoritmanya bcrypt/argon yang
+     * dikenali PHP. Hash kosong/aneh akan diganti password acak.
+     */
+    private function hashPasswordLamaValid(?string $hash): bool
+    {
+        if ($hash === null || $hash === '') {
+            return false;
+        }
+
+        $info = password_get_info($hash);
+
+        return in_array($info['algoName'], ['bcrypt', 'argon2i', 'argon2id'], true);
+    }
+
     private function teks(mixed $nilai): string
     {
         if ($nilai === null) {

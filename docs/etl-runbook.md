@@ -10,7 +10,7 @@
 
 | # | Keputusan |
 |---|---|
-| 1 | **ETL terpilih** — master + riwayat pengajuan (penuh) + presensi **12 bulan terakhir**, **tanpa password** apa pun |
+| 1 | **ETL terpilih** — master + riwayat pengajuan (penuh) + presensi **12 bulan terakhir**. Hash password pegawai (bcrypt/argon) **diimpor apa adanya** (keputusan QA 25 Nov 2026); hash admin lama tidak diimpor |
 | 2 | `cuti`: `maks_hari`/`kuota` = **12 / 90 / 30 / 90** (C01/C02/C03/C04); `maks_bawa` = **6** untuk tahunan, **0** lainnya |
 | 3 | Urutan pakai tabungan = **paling lama dulu (FIFO)**; dasar hitung sisa = kuota tahun berjalan; rollover tetap `min(sisa, 6)` |
 
@@ -53,11 +53,12 @@
 | C03 | Cuti Alasan Penting | 30 | 30 | 0 | keputusan #7 menurunkan dari `null` |
 | C04 | Cuti Besar | 90 | 90 | 0 | syarat 5 tahun via query, bukan kolom |
 
-**user** (1 per pegawai, dibuat baru — **tidak ada hash lama**):
+**user** (1 per pegawai, dibuat baru):
 - `email` = `{nip}@presensi.test` (TLD `.test` cadangan, tidak bisa dikirim — login utama via NIP, lihat issue #18)
-- `password` = `Hash::make(Str::random(32))` — **tidak diketahui siapa pun**; pegawai masuk lewat reset (issue #21)
+- `password` = **hash bcrypt/argon dari `pegawai.password` lama, apa adanya** (keputusan QA 25 Nov 2026). Bila hash kosong/tidak dikenal → `Hash::make(Str::random(32))` dan pegawai harus reset via admin (issue #21)
 - `nama` = `nama_lengkap` lama, `role` = `pegawai`
 - `users` lama (1 admin + hash yang pernah terekspos) → **dilewati total**
+- ⚠️ Banyak akun lama memakai password default `123456`; setelah impor, wajib minta pegawai mengganti password (atau reset selektif oleh admin).
 
 **pegawai:** `nip→nip` (unique), `nama_lengkap→nama`, `jabatan`, `no_hp`, `kode_dept→id_dept` (via lookup `kode`), `foto` → lihat keputusan kecil §6, `user_id` → user hasil pembuatan di atas.
 
@@ -103,7 +104,7 @@ Ditemukan dari analisis langsung — semua aturan ini **wajib** ada di command:
 1. departemen            (19)
 2. jam_kerja             (3)
 3. cuti                  (4)          ← angka keputusan #2, bukan salin jml_hari
-4. user + pegawai        (97 + 97)    ← email fiktif, hash acak; admin dari seeder
+4. user + pegawai        (97 + 97)    ← email fiktif, hash password lama; admin dari seeder
 5. konfigurasi_jam_kerja (677)
 6. pengajuan             (1.987)      ← sekalian bangun peta kode_cuti → id baru (di memori)
 7. presensi 12 bulan     (10.602)     ← pakai peta dari langkah 6 + aturan §3
@@ -113,7 +114,7 @@ Ditemukan dari analisis langsung — semua aturan ini **wajib** ada di command:
 
 Jendela presensi: **365 hari ke belakang dari tanggal run** (argumen `--since=YYYY-MM-DD` untuk override). Dari dump saat ini: `>= 2025-11-19` → **10.662** baris valid → −34 baris NIP tidak 18 digit −26 duplikat = **10.602**.
 
-**Jangan impor:** file foto (`*-in.png`, `*-out.png`), lampiran (`doc_sid`), hash/password apa pun, file dump itu sendiri.
+**Jangan impor:** file foto (`*-in.png`, `*-out.png`), lampiran (`doc_sid`), hash **admin** lama, file dump itu sendiri. Hash password **pegawai** diimpor sesuai keputusan QA di atas.
 
 ---
 
