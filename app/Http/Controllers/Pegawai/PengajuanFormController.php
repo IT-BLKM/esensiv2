@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Pegawai;
 
 use App\Actions\Cuti\HitungSisaCutiAction;
 use App\Actions\Pengajuan\CreatePengajuanAction;
+use App\Actions\Pengajuan\DeletePengajuanAction;
 use App\Actions\Pengajuan\UpdatePengajuanAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePengajuanRequest;
@@ -59,6 +60,21 @@ class PengajuanFormController extends Controller
         abort_unless($pengajuan->status === 'pending', 403);
 
         return $this->form($request, $pengajuan);
+    }
+
+    public function cancel(
+        Request $request,
+        Pengajuan $pengajuan,
+        DeletePengajuanAction $delete,
+    ): RedirectResponse {
+        $this->authorize('delete', $pengajuan);
+
+        /** @var User $user */
+        $user = $request->user();
+        $delete($user, $pengajuan);
+
+        return redirect()->route('pengajuan.index')
+            ->with('success', 'Pengajuan berhasil dibatalkan.');
     }
 
     public function update(
