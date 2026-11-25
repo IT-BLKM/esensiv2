@@ -73,7 +73,7 @@
             };
 
             $alasanTombol = match ($mode) {
-                'masuk', 'keluar' => 'Nyalakan kamera, ambil lokasi, lalu hadapkan wajah untuk mengaktifkan tombol.',
+                'masuk', 'keluar' => 'Nyalakan kamera, minta izin lokasi, lalu hadapkan wajah untuk mengaktifkan tombol.',
                 'dl-setengah' => 'DL setengah hari: cukup absen sekali hari ini, tanpa absen pulang.',
                 'dl-setengah-selesai' => 'Absen DL setengah hari sudah tercatat; absen pulang tidak diperlukan.',
                 'tanpa-shift' => 'Tidak ada shift terjadwal hari ini.',
@@ -98,8 +98,72 @@
         >
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">Presensi</h1>
-                <p class="mt-1 text-sm text-gray-600">Absen masuk dan pulang dengan foto, lokasi GPS, dan verifikasi wajah.</p>
+                <p class="mt-1 text-sm text-gray-600">Foto dan lokasi divalidasi ulang di server sebelum disimpan. Wajah wajib terdeteksi.</p>
             </div>
+
+            {{-- Kamera dan tombol absen ditaruh paling atas agar tidak perlu scroll. --}}
+            <x-card title="Kamera & absen" subtitle="Nyalakan kamera, hadapkan wajah, lalu tekan tombol absen.">
+                <div class="flex flex-col gap-3">
+                    <div class="relative aspect-video max-h-72 overflow-hidden rounded-md bg-gray-900">
+                        <video
+                            id="video-presensi"
+                            class="h-full w-full -scale-x-100 object-cover"
+                            autoplay
+                            playsinline
+                            muted
+                        ></video>
+
+                        <div
+                            id="placeholder-kamera"
+                            class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-sm text-gray-200"
+                        >
+                            <x-icon name="presensi" size="lg" />
+                            <p>Kamera belum aktif.</p>
+                        </div>
+
+                        <div class="pointer-events-none absolute inset-0 flex items-end justify-center pb-3">
+                            <span class="rounded-full bg-gray-900/70 px-3 py-1 text-xs text-white">Posisikan wajah di tengah bingkai</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <x-button type="button" id="tombol-kamera" variant="secondary" size="sm">Nyalakan kamera</x-button>
+                        <p id="status-wajah" class="text-sm text-gray-600" role="status" aria-live="polite">Kamera belum aktif.</p>
+                    </div>
+
+                    <x-alert id="pesan-kamera" variant="danger" class="hidden" role="alert"></x-alert>
+                    <x-alert id="pesan-model" variant="danger" class="hidden" role="alert">
+                        Deteksi wajah wajib aktif. Muat ulang model deteksi lalu coba lagi.
+                    </x-alert>
+                    <div id="wadah-muat-model" class="hidden">
+                        <x-button type="button" id="tombol-muat-model" variant="secondary" size="sm">Muat ulang model wajah</x-button>
+                    </div>
+
+                    <form id="form-presensi" method="POST" action="{{ route('presensi.store') }}" class="flex flex-col gap-3">
+                        @csrf
+
+                        <input type="hidden" name="jenis" id="input-jenis" value="{{ $mode === 'keluar' ? 'keluar' : 'masuk' }}">
+                        <input type="hidden" name="foto" id="input-foto">
+                        <input type="hidden" name="koordinat" id="input-koordinat">
+                        <input type="hidden" name="akurasi" id="input-akurasi">
+                        <input type="hidden" name="konfirmasi_pulang_cepat" id="input-konfirmasi-pulang-cepat" value="0">
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <x-button
+                                type="submit"
+                                id="tombol-absen"
+                                variant="primary"
+                                disabled
+                                aria-describedby="alasan-tombol"
+                            >{{ $labelTombol }}</x-button>
+
+                            <p id="alasan-tombol" class="text-xs text-gray-600">{{ $alasanTombol }}</p>
+                        </div>
+
+                        <x-alert id="pesan-presensi" variant="info" class="hidden" role="status" aria-live="polite"></x-alert>
+                    </form>
+                </div>
+            </x-card>
 
             <x-card title="Status hari ini" :subtitle="$hariIni['labelTanggal']">
                 <div class="flex flex-col gap-3">
@@ -109,25 +173,13 @@
                         @if ($hariIni['terlambat'])
                             <x-badge variant="warning">Terlambat {{ $hariIni['menitTerlambat'] }} menit</x-badge>
                         @endif
-                    </div>
 
-                    @if ($shift !== null)
-                        <dl class="flex flex-col divide-y divide-gray-100 text-sm">
-                            <div class="flex items-center justify-between gap-4 pb-2">
-                                <dt class="text-gray-600">Shift</dt>
-                                <dd class="text-right font-medium text-gray-900">
-                                    {{ $shift['nama'] }}
-                                    <span class="font-normal text-gray-600">({{ $shift['kode'] }})</span>
-                                </dd>
-                            </div>
-                            <div class="flex items-center justify-between gap-4 pt-2">
-                                <dt class="text-gray-600">Jadwal</dt>
-                                <dd class="text-right font-medium text-gray-900">
-                                    {{ $shift['jamMasuk'] }} &ndash; {{ $shift['jamPulang'] }}
-                                </dd>
-                            </div>
-                        </dl>
-                    @endif
+                        @if ($shift !== null)
+                            <span class="text-xs text-gray-600">
+                                {{ $shift['nama'] }} ({{ $shift['kode'] }}) · {{ $shift['jamMasuk'] }}–{{ $shift['jamPulang'] }}
+                            </span>
+                        @endif
+                    </div>
 
                     @php
                         $penggantian = $hariIni['penggantian'] ?? null;
@@ -164,14 +216,14 @@
                     @endif
 
                     @if ($jamMasuk !== null || $jamKeluar !== null)
-                        <dl class="flex flex-col divide-y divide-gray-100 text-sm">
-                            <div class="flex items-center justify-between gap-4 pb-2">
-                                <dt class="text-gray-600">Jam masuk</dt>
-                                <dd class="text-right font-medium text-gray-900">{{ $jamMasuk ?? '—' }}</dd>
+                        <dl class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="rounded-md bg-gray-50 px-3 py-2">
+                                <dt class="text-xs text-gray-600">Jam masuk</dt>
+                                <dd class="font-medium text-gray-900">{{ $jamMasuk ?? '—' }}</dd>
                             </div>
-                            <div class="flex items-center justify-between gap-4 pt-2">
-                                <dt class="text-gray-600">Jam keluar</dt>
-                                <dd class="text-right font-medium text-gray-900">{{ $jamKeluar ?? '—' }}</dd>
+                            <div class="rounded-md bg-gray-50 px-3 py-2">
+                                <dt class="text-xs text-gray-600">Jam keluar</dt>
+                                <dd class="font-medium text-gray-900">{{ $jamKeluar ?? '—' }}</dd>
                             </div>
                         </dl>
                     @endif
@@ -209,104 +261,41 @@
                 </div>
             </x-card>
 
-            <x-card title="Kamera" subtitle="Foto diambil dari kamera ini saat Anda menekan tombol absen.">
-                <div class="flex flex-col gap-3">
-                    <div class="relative aspect-video overflow-hidden rounded-md bg-gray-900">
-                        <video
-                            id="video-presensi"
-                            class="h-full w-full -scale-x-100 object-cover"
-                            autoplay
-                            playsinline
-                            muted
-                        ></video>
-
-                        <div
-                            id="placeholder-kamera"
-                            class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-sm text-gray-200"
-                        >
-                            <x-icon name="presensi" size="lg" />
-                            <p>Kamera belum aktif.</p>
-                        </div>
-
-                        <div class="pointer-events-none absolute inset-0 flex items-end justify-center pb-3">
-                            <span class="rounded-full bg-gray-900/70 px-3 py-1 text-xs text-white">Posisikan wajah di tengah bingkai</span>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <x-button type="button" id="tombol-kamera" variant="secondary" size="sm">Nyalakan kamera</x-button>
-                        <p id="status-wajah" class="text-sm text-gray-600" role="status" aria-live="polite">Kamera belum aktif.</p>
-                    </div>
-
-                    <x-alert id="pesan-kamera" variant="danger" class="hidden" role="alert"></x-alert>
-                    <x-alert id="pesan-model" variant="warning" class="hidden" role="status">
-                        Deteksi wajah tidak tersedia. Webcam tetap bisa dipakai; absen dapat
-                        dilanjutkan tanpa verifikasi wajah.
-                    </x-alert>
-                </div>
-            </x-card>
-
-            <x-card title="Lokasi Anda" subtitle="Indikator UI — server tetap memvalidasi radius pada issue #32.">
+            <x-card title="Lokasi Anda" subtitle="Lokasi diambil otomatis. Server tetap memvalidasi radius.">
                 <div class="flex flex-col gap-3">
                     <div
                         id="peta-presensi"
-                        class="h-56 w-full rounded-md border border-gray-200 bg-gray-100"
+                        class="h-48 w-full rounded-md border border-gray-200 bg-gray-100"
                         role="img"
                         aria-label="Peta lokasi kantor dan posisi Anda"
                     ></div>
 
-                    <dl class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                        <div class="flex items-center justify-between gap-3 sm:flex-col sm:items-start sm:gap-0">
-                            <dt class="text-gray-600">Koordinat</dt>
-                            <dd id="teks-koordinat" class="text-right font-medium text-gray-900 sm:text-left">Belum diambil</dd>
+                    <dl class="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                        <div class="rounded-md bg-gray-50 px-3 py-2">
+                            <dt class="text-xs text-gray-600">Koordinat</dt>
+                            <dd id="teks-koordinat" class="text-xs font-medium text-gray-900">Belum diambil</dd>
                         </div>
-                        <div class="flex items-center justify-between gap-3 sm:flex-col sm:items-start sm:gap-0">
-                            <dt class="text-gray-600">Jarak ke kantor</dt>
-                            <dd id="teks-jarak" class="text-right font-medium text-gray-900 sm:text-left">—</dd>
+                        <div class="rounded-md bg-gray-50 px-3 py-2">
+                            <dt class="text-xs text-gray-600">Jarak ke kantor</dt>
+                            <dd id="teks-jarak" class="text-xs font-medium text-gray-900">—</dd>
                         </div>
-                        <div class="flex items-center justify-between gap-3 sm:flex-col sm:items-start sm:gap-0">
-                            <dt class="text-gray-600">Akurasi</dt>
-                            <dd id="teks-akurasi" class="text-right font-medium text-gray-900 sm:text-left">—</dd>
+                        <div class="rounded-md bg-gray-50 px-3 py-2">
+                            <dt class="text-xs text-gray-600">Akurasi</dt>
+                            <dd id="teks-akurasi" class="text-xs font-medium text-gray-900">—</dd>
                         </div>
-                        <div class="flex items-center justify-between gap-3 sm:flex-col sm:items-start sm:gap-0">
-                            <dt class="text-gray-600">Status radius</dt>
-                            <dd id="teks-radius" class="text-right font-medium text-gray-900 sm:text-left">—</dd>
+                        <div class="rounded-md bg-gray-50 px-3 py-2">
+                            <dt class="text-xs text-gray-600">Status radius</dt>
+                            <dd id="teks-radius" class="text-xs font-medium text-gray-900">—</dd>
                         </div>
                     </dl>
 
                     <div class="flex flex-wrap items-center gap-2">
-                        <x-button type="button" id="tombol-lokasi" variant="secondary" size="sm">Ambil lokasi</x-button>
-                        <p class="text-xs text-gray-500">Peta memuat ubin OpenStreetMap dan memerlukan internet; indikator teks tetap bekerja tanpa peta.</p>
+                        <x-button type="button" id="tombol-lokasi" variant="secondary" size="sm">Minta izin lokasi</x-button>
+                        <p class="text-xs text-gray-500">Jika browser belum memberi izin, tekan tombol ini lalu pilih Izinkan.</p>
                     </div>
 
                     <x-alert id="pesan-lokasi" variant="danger" class="hidden" role="alert"></x-alert>
                 </div>
-            </x-card>
-
-            <x-card title="Kirim presensi" subtitle="Foto dan lokasi divalidasi ulang di server sebelum disimpan.">
-                <form id="form-presensi" method="POST" action="{{ route('presensi.store') }}" class="flex flex-col gap-3">
-                    @csrf
-
-                    <input type="hidden" name="jenis" id="input-jenis" value="{{ $mode === 'keluar' ? 'keluar' : 'masuk' }}">
-                    <input type="hidden" name="foto" id="input-foto">
-                    <input type="hidden" name="koordinat" id="input-koordinat">
-                    <input type="hidden" name="akurasi" id="input-akurasi">
-                    <input type="hidden" name="konfirmasi_pulang_cepat" id="input-konfirmasi-pulang-cepat" value="0">
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <x-button
-                            type="submit"
-                            id="tombol-absen"
-                            variant="primary"
-                            disabled
-                            aria-describedby="alasan-tombol"
-                        >{{ $labelTombol }}</x-button>
-
-                        <p id="alasan-tombol" class="text-xs text-gray-600">{{ $alasanTombol }}</p>
-                    </div>
-
-                    <x-alert id="pesan-presensi" variant="info" class="hidden" role="status" aria-live="polite"></x-alert>
-                </form>
             </x-card>
         </div>
 

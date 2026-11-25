@@ -10,8 +10,8 @@ uses(LazilyRefreshDatabase::class);
  * Aset model face-api (issue #35). Deteksi wajah berjalan di browser, jadi
  * test ini mengunci dua kontrak yang bisa dicek dari server:
  * 1. model benar-benar ikut terkirim di public/models beserta file bobotnya;
- * 2. halaman presensi menunjuk ke model lokal dan menyediakan pesan fallback
- *    saat model gagal dimuat.
+ * 2. halaman presensi menunjuk ke model lokal dan menyediakan tombol muat
+ *    ulang saat model gagal dimuat; absen tidak diizinkan tanpa deteksi.
  */
 beforeEach(function () {
     $this->withoutVite();
@@ -42,7 +42,7 @@ it('ships the local face detection model and its weight file', function () {
     }
 });
 
-it('points the presensi page to the local model and shows the fallback message', function () {
+it('points the presensi page to the local model and requires face detection', function () {
     $user = User::factory()->create(['role' => 'pegawai']);
     Pegawai::factory()->create(['user_id' => $user->id]);
 
@@ -50,8 +50,9 @@ it('points the presensi page to the local model and shows the fallback message',
         ->assertOk()
         ->assertSee('data-models-url="'.asset('models').'"', false)
         ->assertSee('id="pesan-model"', false)
-        ->assertSee('Deteksi wajah tidak tersedia')
-        ->assertSee('Webcam tetap bisa dipakai')
+        ->assertSee('Deteksi wajah wajib aktif')
+        ->assertSee('id="tombol-muat-model"', false)
+        ->assertSee('Muat ulang model wajah')
         ->assertDontSee('cdn.jsdelivr.net')
         ->assertDontSee('unpkg.com');
 });
