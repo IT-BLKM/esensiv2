@@ -44,6 +44,15 @@ class Presensi extends Model
     }
 
     /**
+     * Shift yang berlaku saat baris presensi dicatat. Dipakai menghitung
+     * keterlambatan dari `jam_kerja.jam_masuk` (issue #34), bukan angka tetap.
+     */
+    public function jamKerja(): BelongsTo
+    {
+        return $this->belongsTo(JamKerja::class, 'id_jam_kerja');
+    }
+
+    /**
      * Batasi query ke data pegawai yang sedang login. Dipakai Action setelah
      * policy `viewAny` lolos; admin sengaja tidak memakai scope ini.
      */

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\Pegawai\DashboardController;
 use App\Http\Controllers\Pegawai\LaporanController;
 use App\Http\Controllers\Pegawai\PengajuanController;
 use App\Http\Controllers\Pegawai\PresensiController;
@@ -18,7 +19,7 @@ Route::get('/', function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', fn () => view('pegawai.dashboard'))
+    Route::get('/dashboard', DashboardController::class)
         ->middleware('role:pegawai')
         ->name('dashboard');
 
