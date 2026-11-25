@@ -4,6 +4,7 @@ use App\Actions\Etl\ImportDataLamaAction;
 use App\Services\Etl\ImportReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
@@ -95,9 +96,16 @@ test('eksekusi mengimpor data sesuai rancangan dan membersihkan data kotor', fun
         ->and($c01->maks_hari)->toBe(12)
         ->and($c01->maks_bawa)->toBe(6);
 
-    // User + pegawai: admin lama TIDAK diimpor, password lama tidak dibawa
+    // User + pegawai: admin lama tidak diimpor, hash password pegawai ikut dibawa.
+    $userA = DB::table('user')->where('email', '199302032022032001@presensi.test')->first();
+    $userB = DB::table('user')->where('email', '198009082003122003@presensi.test')->first();
+
     expect(DB::table('user')->count())->toBe(2)
         ->and(DB::table('user')->where('email', 'admin.lama@presensi.test')->exists())->toBeFalse()
+        ->and($userA)->not->toBeNull()
+        ->and(Hash::check('rahasia-lama-a', $userA->password))->toBeTrue()
+        ->and($userB)->not->toBeNull()
+        ->and(Hash::check('rahasia-lama-a', $userB->password))->toBeFalse()
         ->and(DB::table('pegawai')->count())->toBe(2)
         ->and(DB::table('pegawai')->where('nip', '198009082003122003')->value('foto'))->toBeNull();
 

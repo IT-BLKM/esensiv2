@@ -47,6 +47,9 @@ function sqlDumpLama(): string
     $saldoDari = now()->subYears(1)->month(6)->day(15)->next('Wednesday');
     $saldoSampai = $saldoDari->copy()->addDays(11);
 
+    // Hash bcrypt lama (password: rahasia-lama-a) — harus ikut diimpor apa adanya.
+    $hashLamaA = '$2y$12$XTo1gYRUFkatznocRZvpieFjFfedgD72oJlPQXJaWYD5b/A/knd.2';
+
     return <<<SQL
 INSERT INTO `departemen` (`kode_dept`, `nama_dept`) VALUES
 ('D001', 'Umum');
@@ -62,7 +65,7 @@ INSERT INTO `master_cuti` (`kode_cutii`, `nama_cuti`, `jml_hari`) VALUES
 ('C04', 'Cuti Besar', 90);
 
 INSERT INTO `pegawai` (`nip`, `nama_lengkap`, `jabatan`, `foto`, `kode_dept`, `no_hp`, `password`, `remember_token`) VALUES
-('{$nipA}', 'Budi Santoso', 'Staf', 'budi.jpg', 'D001', '08123456789', NULL, NULL),
+('{$nipA}', 'Budi Santoso', 'Staf', 'budi.jpg', 'D001', '08123456789', '{$hashLamaA}', NULL),
 ('{$nipB}', 'Ani Wijaya', 'Staf', 'null', 'D001', '08123456780', NULL, NULL);
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`) VALUES
