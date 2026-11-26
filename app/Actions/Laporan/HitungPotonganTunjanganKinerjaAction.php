@@ -5,6 +5,7 @@ namespace App\Actions\Laporan;
 use App\Actions\Presensi\HitungMenitPulangCepatAction;
 use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
+use App\Models\JamKerja;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\Presensi;
@@ -43,6 +44,10 @@ class HitungPotonganTunjanganKinerjaAction
      *     selesai: string,
      *     baris: list<array{
      *         tanggal: string,
+     *         hari: string,
+     *         jamMasuk: string|null,
+     *         jamKeluar: string|null,
+     *         shift: string,
      *         menitTerlambat: int|null,
      *         levelTl: string|null,
      *         persenTl: float,
@@ -129,6 +134,10 @@ class HitungPotonganTunjanganKinerjaAction
      *     selesai: string,
      *     baris: list<array{
      *         tanggal: string,
+     *         hari: string,
+     *         jamMasuk: string|null,
+     *         jamKeluar: string|null,
+     *         shift: string,
      *         menitTerlambat: int|null,
      *         levelTl: string|null,
      *         persenTl: float,
@@ -235,9 +244,19 @@ class HitungPotonganTunjanganKinerjaAction
     /**
      * @return array{
      *     tanggal: string,
+     *     hari: string,
+     *     jamMasuk: string|null,
+     *     jamKeluar: string|null,
+     *     shift: string,
      *     menitTerlambat: int|null,
      *     levelTl: string|null,
      *     persenTl: float,
+     *     menitDiganti: int,
+     *     bisaDiganti: bool,
+     *     penggantianTerpenuhi: bool,
+     *     targetPulang: string|null,
+     *     batasPulang: string|null,
+     *     catatanPenggantian: string|null,
      *     menitPulangCepat: int|null,
      *     levelPsw: string|null,
      *     persenPsw: float,
@@ -252,7 +271,7 @@ class HitungPotonganTunjanganKinerjaAction
 
         $shift = $presensi->jamKerja;
 
-        if ($shift === null || in_array($shift->kode, $this->kodeJamKerjaDiabaikan(), true)) {
+        if (! $shift instanceof JamKerja || in_array($shift->kode, $this->kodeJamKerjaDiabaikan(), true)) {
             return null;
         }
 
@@ -266,6 +285,12 @@ class HitungPotonganTunjanganKinerjaAction
 
         return [
             'tanggal' => (string) $presensi->tgl_presensi,
+            'hari' => CarbonImmutable::parse((string) $presensi->tgl_presensi)
+                ->locale('id')
+                ->translatedFormat('l'),
+            'jamMasuk' => $this->formatJam($presensi->jam_masuk),
+            'jamKeluar' => $this->formatJam($presensi->jam_keluar),
+            'shift' => $shift->kode,
             'menitTerlambat' => $menitTerlambat,
             'levelTl' => $levelTl,
             'persenTl' => $levelTl === null ? 0.0 : $this->persenUntuk('keterlambatan', $levelTl),
@@ -356,6 +381,13 @@ class HitungPotonganTunjanganKinerjaAction
         }
 
         return $sekarang->gte($this->waktu($presensi->tgl_presensi, $jamPulang));
+    }
+
+    private function formatJam(?string $jam): ?string
+    {
+        return $jam === null || $jam === ''
+            ? null
+            : CarbonImmutable::parse($jam)->format('H:i');
     }
 
     private function dinasLuarSetengahHari(Presensi $presensi): bool

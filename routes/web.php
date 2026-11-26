@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\Admin\PengajuanController as PengajuanAdminController;
 use App\Http\Controllers\Admin\RekapKeterlambatanController;
 use App\Http\Controllers\Admin\SaldoCutiController;
+use App\Http\Controllers\Admin\TukinController;
+use App\Http\Controllers\Admin\TukinExportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\Pegawai\DashboardController;
@@ -166,6 +168,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/rekap-keterlambatan', RekapKeterlambatanController::class)->name('rekap.index');
         Route::get('/laporan/export/excel', [LaporanExportController::class, 'excel'])->name('laporan.export.excel');
         Route::get('/laporan/export/pdf', [LaporanExportController::class, 'pdf'])->name('laporan.export.pdf');
+        Route::get('/tukin', TukinController::class)->name('tukin.index');
+        Route::get('/tukin/export/excel', [TukinExportController::class, 'excel'])->name('tukin.export.excel');
+        Route::get('/tukin/export/pdf', [TukinExportController::class, 'pdf'])->name('tukin.export.pdf');
         Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
         Route::put('/konfigurasi/lokasi', [KonfigurasiJamKerjaController::class, 'updateLokasi'])
             ->name('konfigurasi.lokasi.update');
