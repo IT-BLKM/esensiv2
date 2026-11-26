@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Pengaturan\AmbilLokasiKantorAction;
 use App\Actions\Presensi\CariMonitoringKehadiranAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MonitoringKehadiranRequest;
@@ -20,9 +21,11 @@ class MonitoringController extends Controller
     public function __invoke(
         MonitoringKehadiranRequest $request,
         CariMonitoringKehadiranAction $cari,
+        AmbilLokasiKantorAction $ambilLokasiKantor,
     ): View {
         $this->authorize('viewAny', Presensi::class);
 
+        $lokasi = $ambilLokasiKantor();
         $zonaWaktu = (string) config('presensi.zona_waktu', 'Asia/Jakarta');
         $filter = $request->validated();
         $tanggal = $filter['tanggal'] ?? CarbonImmutable::now($zonaWaktu)->toDateString();
@@ -43,9 +46,9 @@ class MonitoringController extends Controller
                 ->locale('id')
                 ->translatedFormat('l, d F Y'),
             'kantor' => [
-                'latitude' => (float) config('presensi.latitude'),
-                'longitude' => (float) config('presensi.longitude'),
-                'radius' => (int) config('presensi.radius'),
+                'latitude' => (float) $lokasi['latitude'],
+                'longitude' => (float) $lokasi['longitude'],
+                'radius' => $lokasi['radius'],
             ],
         ]);
     }

@@ -1,9 +1,10 @@
 <x-layouts.admin title="Konfigurasi">
     @php
-        $latitude = (string) config('presensi.latitude');
-        $longitude = (string) config('presensi.longitude');
-        $radius = (int) config('presensi.radius');
-        $lokasiSah = $latitude !== '' && $longitude !== '' && $radius > 0;
+        $latitude = old('latitude', $lokasi['latitude']);
+        $longitude = old('longitude', $lokasi['longitude']);
+        $radiusInput = old('radius', (string) $lokasi['radius']);
+        $radius = (int) $radiusInput;
+        $lokasiSah = is_numeric($latitude) && is_numeric($longitude) && $radius > 0;
     @endphp
 
     <div class="flex flex-col gap-4">
@@ -14,59 +15,99 @@
             </p>
         </div>
 
+        @if (session('success'))
+            <x-alert variant="success">{{ session('success') }}</x-alert>
+        @endif
+
         <x-card
             title="Lokasi & radius absen"
-            subtitle="Hanya-baca — sumbernya config/presensi.php, diisi lewat .env"
+            subtitle="Dipakai server untuk memvalidasi setiap absen. Simpan di sini agar tidak perlu mengubah .env."
         >
-            @unless ($lokasiSah)
-                <x-alert variant="danger" title="Konfigurasi belum lengkap" class="mb-4">
-                    Salah satu dari <code class="rounded bg-gray-100 px-1">PRESENSI_LAT</code>,
-                    <code class="rounded bg-gray-100 px-1">PRESENSI_LONG</code>, atau
-                    <code class="rounded bg-gray-100 px-1">PRESENSI_RADIUS</code> kosong/nol.
-                    Lengkapi di <code class="rounded bg-gray-100 px-1">.env</code> lalu restart server.
-                </x-alert>
-            @endunless
+            <form method="POST" action="{{ route('admin.konfigurasi.lokasi.update') }}" class="flex flex-col gap-4">
+                @csrf
+                @method('PUT')
 
-            <dl class="flex flex-col divide-y divide-gray-100 text-sm">
-                <div class="flex items-center justify-between gap-4 py-3">
-                    <dt class="text-gray-600">Lintang (latitude)</dt>
-                    <dd class="text-right font-medium text-gray-900">
-                        {{ $latitude !== '' ? $latitude : '—' }}
-                    </dd>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div>
+                        <label for="latitude" class="block text-sm font-medium text-gray-700">Lintang (latitude)</label>
+                        <input
+                            id="latitude"
+                            name="latitude"
+                            type="number"
+                            step="any"
+                            min="-90"
+                            max="90"
+                            required
+                            value="{{ $latitude }}"
+                            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
+                        >
+                        @error('latitude')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="longitude" class="block text-sm font-medium text-gray-700">Bujur (longitude)</label>
+                        <input
+                            id="longitude"
+                            name="longitude"
+                            type="number"
+                            step="any"
+                            min="-180"
+                            max="180"
+                            required
+                            value="{{ $longitude }}"
+                            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
+                        >
+                        @error('longitude')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="radius" class="block text-sm font-medium text-gray-700">Radius absen (meter)</label>
+                        <input
+                            id="radius"
+                            name="radius"
+                            type="number"
+                            step="1"
+                            min="1"
+                            max="100000"
+                            required
+                            value="{{ $radiusInput }}"
+                            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-xs focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none"
+                        >
+                        @error('radius')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
-                <div class="flex items-center justify-between gap-4 py-3">
-                    <dt class="text-gray-600">Bujur (longitude)</dt>
-                    <dd class="text-right font-medium text-gray-900">
-                        {{ $longitude !== '' ? $longitude : '—' }}
-                    </dd>
-                </div>
-                <div class="flex items-center justify-between gap-4 py-3">
-                    <dt class="text-gray-600">Radius absen</dt>
-                    <dd class="text-right font-medium text-gray-900">
-                        {{ $radius > 0 ? number_format($radius, 0, ',', '.').' m' : '—' }}
+
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-xs text-gray-500">
+                        Radius {{ number_format(max($radius, 0), 0, ',', '.') }} m
                         @if ($radius >= 1000)
-                            <span class="text-gray-500">({{ number_format($radius / 1000, 0, ',', '.') }} km)</span>
+                            ({{ number_format($radius / 1000, 0, ',', '.') }} km)
                         @endif
-                    </dd>
-                </div>
-            </dl>
+                        · nilai awal diambil dari <code class="rounded bg-gray-100 px-1">config/presensi.php</code>
+                    </p>
 
-            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
-                <p class="text-xs text-gray-500">
-                    Perubahan dilakukan di <code class="rounded bg-gray-100 px-1">.env</code>,
-                    bukan lewat halaman ini.
-                </p>
-                @if ($lokasiSah)
-                    <a
-                        href="https://www.google.com/maps/search/?api=1&amp;query={{ urlencode($latitude.','.$longitude) }}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex items-center gap-1 rounded-md text-sm font-medium text-brand-700 underline underline-offset-4 hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
-                    >
-                        Buka di peta
-                    </a>
-                @endif
-            </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        @if ($lokasiSah)
+                            <a
+                                href="https://www.google.com/maps/search/?api=1&amp;query={{ urlencode((string) $latitude.','.(string) $longitude) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center gap-1 rounded-md text-sm font-medium text-brand-700 underline underline-offset-4 hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                            >
+                                Buka di peta
+                            </a>
+                        @endif
+
+                        <x-button type="submit" size="sm">Simpan lokasi</x-button>
+                    </div>
+                </div>
+            </form>
         </x-card>
 
         <x-card title="Jadwal jam kerja per pegawai">

@@ -7,17 +7,25 @@ use Carbon\Carbon;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\Color;
 use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\XLSX\Options;
+use OpenSpout\Writer\XLSX\Options\PageOrientation;
+use OpenSpout\Writer\XLSX\Options\PageSetup;
+use OpenSpout\Writer\XLSX\Options\PaperSize;
 use OpenSpout\Writer\XLSX\Writer;
 
 /**
  * Tulis laporan presensi ke XLSX memakai OpenSpout.
  *
- * Dua bentuk: laporan harian satu pegawai dan matriks semua pegawai.
- * File ditulis ke temporary path; controller mengirimnya sebagai download
- * lalu menghapus file.
+ * Dua bentuk: laporan harian satu pegawai (A4 portrait) dan matriks semua
+ * pegawai (A4 landscape). Page setup disamakan dengan lampiran QA supaya file
+ * bisa langsung dicetak tanpa mengatur ulang orientasi/kertas.
  */
 class TulisExcelLaporanAction
 {
+    public function __construct(
+        private readonly KeteranganPresensiAction $keterangan,
+    ) {}
+
     /**
      * @param  array{labelPeriode: string, baris: list<array<string, mixed>>, ringkasan: array<string, mixed>}  $data
      */
@@ -27,24 +35,24 @@ class TulisExcelLaporanAction
             $judul = $this->gayaJudul();
             $header = $this->gayaHeader();
 
-            $writer->addRow(Row::fromValuesWithStyle(['Laporan Presensi Pegawai'], $judul));
+            $writer->addRow(Row::fromValuesWithStyle([
+                'Laporan Presensi Pegawai Periode '.$data['labelPeriode'],
+            ], $judul));
             $writer->addRow(Row::fromValues([config('presensi.nama_kantor')]));
             $writer->addRow(Row::fromValues([config('presensi.alamat_kantor')]));
-            $writer->addRow(Row::fromValues(['Periode', $data['labelPeriode']]));
-            $writer->addRow(Row::fromValues(['NIP', $pegawai->nip]));
-            $writer->addRow(Row::fromValues(['Nama', $pegawai->nama]));
-            $writer->addRow(Row::fromValues(['Jabatan', $pegawai->jabatan]));
-            $writer->addRow(Row::fromValues(['Unit Kerja', $pegawai->departemen?->nama ?? '-']));
+            $writer->addRow(Row::fromValues([]));
+            $writer->addRow(Row::fromValues(['NIP', ':', $pegawai->nip]));
+            $writer->addRow(Row::fromValues(['Nama', ':', $pegawai->nama]));
+            $writer->addRow(Row::fromValues(['Jabatan', ':', $pegawai->jabatan]));
+            $writer->addRow(Row::fromValues(['Unit Kerja', ':', $pegawai->departemen?->nama ?? '-']));
             $writer->addRow(Row::fromValues([]));
             $writer->addRow(Row::fromValuesWithStyle([
                 'No.',
                 'Tanggal',
-                'Hari',
-                'Shift',
                 'Jam Masuk',
                 'Jam Pulang',
                 'Status',
-                'Keterlambatan',
+                'Keterangan',
                 'Jml Jam',
             ], $header));
 
@@ -52,31 +60,28 @@ class TulisExcelLaporanAction
                 $nilai = [
                     $index + 1,
                     Carbon::parse((string) $item['tanggal'])->format('d-m-Y'),
-                    $item['hari'],
-                    $item['shift'] ?? '-',
                     $item['jamMasuk'] ?? '-',
                     $item['jamKeluar'] ?? '-',
-                    $item['statusLabel'],
-                    $this->keteranganTerlambat($item),
+                    $item['kodeStatus'],
+                    ($this->keterangan)($item),
                     $item['jmlJam'],
                 ];
 
                 $writer->addRow(
-                    $item['menitTerlambat'] > 0
+                    $item['menitTerlambat'] > 0 || $item['menitPulangCepat'] > 0
                         ? Row::fromValuesWithStyle($nilai, $this->gayaTerlambat())
                         : Row::fromValues($nilai),
                 );
             }
 
-            $writer->addRow(Row::fromValues([]));
-            $writer->addRow(Row::fromValuesWithStyle(['Rekap'], $judul));
-            $writer->addRow(Row::fromValues(['Hadir (tepat waktu)', $data['ringkasan']['tepatWaktu']]));
-            $writer->addRow(Row::fromValues(['Terlambat', $data['ringkasan']['terlambat']]));
-            $writer->addRow(Row::fromValues(['Cuti', $data['ringkasan']['cuti']]));
-            $writer->addRow(Row::fromValues(['Sakit', $data['ringkasan']['sakit']]));
-            $writer->addRow(Row::fromValues(['Dinas Luar', $data['ringkasan']['dl']]));
-            $writer->addRow(Row::fromValues(['Total menit terlambat', $data['ringkasan']['totalMenitTerlambat']]));
-        });
+            $sheet = $writer->getCurrentSheet();
+            $sheet->setColumnWidth(5, 1);
+            $sheet->setColumnWidth(12, 2);
+            $sheet->setColumnWidth(11, 3, 4);
+            $sheet->setColumnWidth(8, 5);
+            $sheet->setColumnWidth(36, 6);
+            $sheet->setColumnWidth(8, 7);
+        }, PageOrientation::PORTRAIT);
     }
 
     /**
@@ -88,12 +93,14 @@ class TulisExcelLaporanAction
             $judul = $this->gayaJudul();
             $header = $this->gayaHeader();
 
-            $writer->addRow(Row::fromValuesWithStyle(['Rekap Presensi Semua Pegawai'], $judul));
+            $writer->addRow(Row::fromValuesWithStyle([
+                'Laporan Presensi Pegawai Periode '.$data['labelPeriode'],
+            ], $judul));
             $writer->addRow(Row::fromValues([config('presensi.nama_kantor')]));
-            $writer->addRow(Row::fromValues(['Periode', $data['labelPeriode']]));
+            $writer->addRow(Row::fromValues([config('presensi.alamat_kantor')]));
             $writer->addRow(Row::fromValues([]));
 
-            $kolom = ['NIP', 'Nama Pegawai', ...array_map('strval', $data['hari']), 'H', 'DL', 'C', 'S', 'A', 'TL'];
+            $kolom = ['NIP', 'Nama Pegawai', ...array_map('strval', $data['hari']), 'H', 'DL', 'C', 'S', 'A', 'TL', 'PSW'];
             $writer->addRow(Row::fromValuesWithStyle($kolom, $header));
 
             foreach ($data['baris'] as $item) {
@@ -109,23 +116,38 @@ class TulisExcelLaporanAction
                 $nilai[] = $item['s'];
                 $nilai[] = $item['a'];
                 $nilai[] = $item['tl'];
+                $nilai[] = $item['psw'];
 
                 $writer->addRow(
-                    $item['tl'] > 0
+                    $item['tl'] > 0 || $item['psw'] > 0
                         ? Row::fromValuesWithStyle($nilai, $this->gayaTerlambat())
                         : Row::fromValues($nilai),
                 );
             }
-        });
+
+            $writer->addRow(Row::fromValues([]));
+            $writer->addRow(Row::fromValues([
+                'Kode: H = hadir, H! = hadir terlambat, DL = dinas luar, C = cuti, S = sakit, A = alpa, TL = hari terlambat, PSW = pulang sebelum waktu.',
+            ]));
+
+            $sheet = $writer->getCurrentSheet();
+            $jumlahHari = count($data['hari']);
+            $sheet->setColumnWidth(20, 1);
+            $sheet->setColumnWidth(28, 2);
+            $sheet->setColumnWidthForRange(4, 3, 2 + $jumlahHari);
+            $sheet->setColumnWidthForRange(5, 3 + $jumlahHari, 9 + $jumlahHari);
+        }, PageOrientation::LANDSCAPE);
     }
 
     /**
      * @param  callable(Writer): void  $isi
      */
-    private function tulis(callable $isi): string
+    private function tulis(callable $isi, PageOrientation $orientasi): string
     {
         $path = (string) tempnam(sys_get_temp_dir(), 'laporan-presensi-');
-        $writer = new Writer;
+        $writer = new Writer(new Options(
+            pageSetup: new PageSetup($orientasi, PaperSize::A4, null, 1),
+        ));
         $writer->openToFile($path);
 
         try {
@@ -154,31 +176,5 @@ class TulisExcelLaporanAction
         return (new Style)
             ->withFontColor(Color::rgb(153, 27, 27))
             ->withBackgroundColor(Color::rgb(254, 226, 226));
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     */
-    private function keteranganTerlambat(array $item): string
-    {
-        if ($item['status'] !== 'hadir') {
-            return $item['statusLabel'];
-        }
-
-        if ($item['menitTerlambat'] <= 0) {
-            return 'Tepat Waktu';
-        }
-
-        $penggantian = $item['penggantian'] ?? null;
-
-        if ($penggantian !== null && $penggantian['terpenuhi']) {
-            return "Terlambat {$item['menitTerlambat']} menit (diganti)";
-        }
-
-        if ($penggantian !== null && ! $penggantian['bisaDiganti']) {
-            return "Terlambat {$item['menitTerlambat']} menit (tidak bisa diganti)";
-        }
-
-        return "Terlambat {$item['menitTerlambat']} menit";
     }
 }

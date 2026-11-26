@@ -3,6 +3,7 @@
 namespace App\Actions\Presensi;
 
 use App\Actions\Pengajuan\CariPengajuanDlHariIniAction;
+use App\Actions\Pengaturan\AmbilLokasiKantorAction;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -21,6 +22,7 @@ class StorePresensiAction
 {
     public function __construct(
         private readonly CariPengajuanDlHariIniAction $cariDlHariIni,
+        private readonly AmbilLokasiKantorAction $ambilLokasiKantor,
         private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
     ) {}
 
@@ -254,12 +256,13 @@ class StorePresensiAction
      */
     private function pastikanDalamRadius(array $koordinat): void
     {
-        $radius = (int) config('presensi.radius');
+        $lokasi = ($this->ambilLokasiKantor)();
+        $radius = $lokasi['radius'];
         $jarak = $this->jarakMeter(
             $koordinat['latitude'],
             $koordinat['longitude'],
-            (float) config('presensi.latitude'),
-            (float) config('presensi.longitude'),
+            (float) $lokasi['latitude'],
+            (float) $lokasi['longitude'],
         );
 
         if ($jarak > $radius) {

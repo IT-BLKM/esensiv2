@@ -22,6 +22,11 @@ class KonfigurasiJamKerjaPolicy
         return $user->role === 'admin';
     }
 
+    public function updateLokasi(User $user): bool
+    {
+        return $user->role === 'admin';
+    }
+
     public function delete(User $user): bool
     {
         return $user->role === 'admin';

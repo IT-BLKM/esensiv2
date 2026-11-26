@@ -4,6 +4,7 @@ use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
+use App\Models\Pengaturan;
 use App\Models\PenggantianKeterlambatan;
 use App\Models\Presensi;
 use App\Models\User;
@@ -126,6 +127,23 @@ it('rejects a location outside the radius without creating a row or file', funct
         ->postJson(route('presensi.store'), payloadStorePresensi(koordinat: koordinatLuarPresensi()))
         ->assertStatus(422)
         ->assertJsonPath('status', 'error')
+        ->assertJsonPath('type', 'radius');
+
+    expect(Presensi::query()->count())->toBe(0)
+        ->and(Storage::disk('local')->allFiles())->toBe([]);
+});
+
+it('uses the radius saved by the admin instead of the config fallback', function () {
+    Pengaturan::simpan('lokasi_latitude', '-2.91380858459444');
+    Pengaturan::simpan('lokasi_longitude', '104.69505610526285');
+    Pengaturan::simpan('lokasi_radius', '1');
+
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi())
+        ->assertStatus(422)
         ->assertJsonPath('type', 'radius');
 
     expect(Presensi::query()->count())->toBe(0)

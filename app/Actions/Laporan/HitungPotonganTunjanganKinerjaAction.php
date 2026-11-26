@@ -2,6 +2,7 @@
 
 namespace App\Actions\Laporan;
 
+use App\Actions\Presensi\HitungMenitPulangCepatAction;
 use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
 use App\Models\Pegawai;
@@ -32,6 +33,7 @@ class HitungPotonganTunjanganKinerjaAction
 
     public function __construct(
         private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
+        private readonly HitungMenitPulangCepatAction $hitungMenitPulangCepat,
         private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
     ) {}
 
@@ -327,14 +329,11 @@ class HitungPotonganTunjanganKinerjaAction
                 : [null, null];
         }
 
-        $batas = $this->waktu($presensi->tgl_presensi, $jamPulang);
-        $keluar = $this->waktu($presensi->tgl_presensi, $presensi->jam_keluar);
+        $menit = ($this->hitungMenitPulangCepat)($presensi);
 
-        if ($keluar->gte($batas)) {
+        if ($menit <= 0) {
             return [null, 0];
         }
-
-        $menit = (int) ceil(($batas->getTimestamp() - $keluar->getTimestamp()) / 60);
 
         return [$this->tingkat('pulang_cepat', $menit)['level'] ?? null, $menit];
     }

@@ -159,6 +159,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/laporan/export/excel', [LaporanExportController::class, 'excel'])->name('laporan.export.excel');
         Route::get('/laporan/export/pdf', [LaporanExportController::class, 'pdf'])->name('laporan.export.pdf');
         Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
+        Route::put('/konfigurasi/lokasi', [KonfigurasiJamKerjaController::class, 'updateLokasi'])
+            ->name('konfigurasi.lokasi.update');
         Route::get('/konfigurasi/{pegawai}/edit', [KonfigurasiJamKerjaController::class, 'edit'])
             ->name('konfigurasi.edit');
         Route::put('/konfigurasi/{pegawai}', [KonfigurasiJamKerjaController::class, 'update'])

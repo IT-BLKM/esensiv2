@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\File;
  */
 class CetakPdfLaporanAction
 {
+    public function __construct(
+        private readonly KeteranganPresensiAction $keterangan,
+    ) {}
+
     /**
      * @param  array{labelPeriode: string, baris: list<array<string, mixed>>, ringkasan: array<string, mixed>}  $data
      * @param  array<int, array{masuk: string|null, keluar: string|null}>  $foto
@@ -28,7 +32,7 @@ class CetakPdfLaporanAction
                 ...$item,
                 'fotoMasuk' => $gambar['masuk'],
                 'fotoKeluar' => $gambar['keluar'],
-                'keterangan' => $this->keteranganTerlambat($item),
+                'keterangan' => ($this->keterangan)($item),
             ];
         }, $data['baris']);
 
@@ -82,31 +86,5 @@ class CetakPdfLaporanAction
         }
 
         return 'data:image/png;base64,'.base64_encode((string) File::get($path));
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     */
-    private function keteranganTerlambat(array $item): string
-    {
-        if ($item['status'] !== 'hadir') {
-            return $item['statusLabel'];
-        }
-
-        if ($item['menitTerlambat'] <= 0) {
-            return 'Tepat Waktu';
-        }
-
-        $penggantian = $item['penggantian'] ?? null;
-
-        if ($penggantian !== null && $penggantian['terpenuhi']) {
-            return "Terlambat {$item['menitTerlambat']} menit (diganti)";
-        }
-
-        if ($penggantian !== null && ! $penggantian['bisaDiganti']) {
-            return "Terlambat {$item['menitTerlambat']} menit (tidak bisa diganti)";
-        }
-
-        return "Terlambat {$item['menitTerlambat']} menit";
     }
 }

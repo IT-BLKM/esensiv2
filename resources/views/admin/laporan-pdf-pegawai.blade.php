@@ -3,50 +3,47 @@
 <head>
     <meta charset="utf-8">
     <style>
-        @page { margin: 12mm; }
+        @page { size: A4 portrait; margin: 12mm 14mm; }
         body { font-family: 'DejaVu Sans', sans-serif; color: #111827; font-size: 9px; }
-        .kop { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-        .kop td { vertical-align: middle; }
-        .logo { width: 60px; }
-        h1 { font-size: 15px; margin: 0 0 2px; }
-        .subtitle { font-size: 10px; margin: 0; color: #374151; }
-        h2 { font-size: 12px; margin: 10px 0 6px; }
-        table.identitas { border-collapse: collapse; margin-bottom: 8px; }
-        table.identitas td { padding: 1px 4px 1px 0; vertical-align: top; }
-        table.data { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        table.data th, table.data td { border: 1px solid #374151; padding: 3px; vertical-align: middle; }
-        table.data th { background: #e5e7eb; font-size: 8px; }
+        table.kop { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+        table.kop td { vertical-align: middle; }
+        .logo { width: 58px; padding-right: 8px; }
+        h1 { font-size: 14px; margin: 0 0 1px; }
+        .kantor { font-size: 10px; font-weight: bold; margin: 0; }
+        .alamat { font-size: 8.5px; margin: 0; font-style: italic; color: #374151; }
+        table.identitas { border-collapse: collapse; margin: 9px 0 7px; font-size: 9px; }
+        table.identitas td { padding: 0 4px 1px 0; vertical-align: top; }
+        table.identitas td.label { width: 68px; }
+        table.data { width: 100%; border-collapse: collapse; }
+        table.data th, table.data td { border: 1px solid #111827; padding: 2px 3px; vertical-align: middle; }
+        table.data th { background: #e5e7eb; font-size: 8px; text-align: center; }
         table.data td { font-size: 8px; }
-        table.data tr.terlambat td { color: #991b1b; background: #fef2f2; }
-        .foto { width: 42px; height: 30px; }
+        table.data tr.terlambat td { background: #fef2f2; }
+        .foto { width: 38px; height: 28px; }
         .center { text-align: center; }
-        .right { text-align: right; }
-        .footer { margin-top: 14px; text-align: right; font-size: 8px; }
-        table.rekap { margin-top: 10px; border-collapse: collapse; }
-        table.rekap td { padding: 2px 8px 2px 0; }
+        .footer { margin-top: 14px; text-align: right; font-size: 8px; line-height: 1.6; }
+        .footer .pemeriksa { font-weight: bold; font-style: italic; }
     </style>
 </head>
 <body>
     <table class="kop">
         <tr>
             @if ($logo)
-                <td class="logo"><img src="{{ $logo }}" width="56" alt="Logo"></td>
+                <td class="logo"><img src="{{ $logo }}" width="54" alt="Logo"></td>
             @endif
             <td>
-                <h1>Laporan Presensi Pegawai</h1>
-                <p class="subtitle">{{ $namaKantor }}</p>
-                <p class="subtitle">{{ $alamatKantor }}</p>
+                <h1>Laporan Presensi Pegawai Periode {{ $data['labelPeriode'] }}</h1>
+                <p class="kantor">{{ $namaKantor }}</p>
+                <p class="alamat">{{ $alamatKantor }}</p>
             </td>
         </tr>
     </table>
 
-    <h2>Periode {{ $data['labelPeriode'] }}</h2>
-
     <table class="identitas">
-        <tr><td>NIP</td><td>:</td><td>{{ $pegawai->nip }}</td></tr>
-        <tr><td>Nama</td><td>:</td><td>{{ $pegawai->nama }}</td></tr>
-        <tr><td>Jabatan</td><td>:</td><td>{{ $pegawai->jabatan }}</td></tr>
-        <tr><td>Unit Kerja</td><td>:</td><td>{{ $pegawai->departemen?->nama ?? '-' }}</td></tr>
+        <tr><td class="label">NIP</td><td>:</td><td>{{ $pegawai->nip }}</td></tr>
+        <tr><td class="label">Nama</td><td>:</td><td>{{ $pegawai->nama }}</td></tr>
+        <tr><td class="label">Jabatan</td><td>:</td><td>{{ $pegawai->jabatan }}</td></tr>
+        <tr><td class="label">Unit Kerja</td><td>:</td><td>{{ $pegawai->departemen?->nama ?? '-' }}</td></tr>
     </table>
 
     <table class="data">
@@ -59,13 +56,13 @@
                 <th>Jam Pulang</th>
                 <th>Foto Pulang</th>
                 <th>Status</th>
-                <th>Keterlambatan</th>
+                <th>Keterangan</th>
                 <th>Jml Jam</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($baris as $item)
-                <tr @if ($item['menitTerlambat'] > 0) class="terlambat" @endif>
+                <tr @if ($item['menitTerlambat'] > 0 || $item['menitPulangCepat'] > 0) class="terlambat" @endif>
                     <td class="center">{{ $loop->iteration }}</td>
                     <td>{{ \Carbon\Carbon::parse((string) $item['tanggal'])->format('d-m-Y') }}</td>
                     <td class="center">{{ $item['jamMasuk'] ?? '-' }}</td>
@@ -84,7 +81,7 @@
                             -
                         @endif
                     </td>
-                    <td class="center">{{ $item['statusLabel'] }}</td>
+                    <td class="center">{{ $item['kodeStatus'] }}</td>
                     <td>{{ $item['keterangan'] }}</td>
                     <td class="center">{{ $item['jmlJam'] }}</td>
                 </tr>
@@ -92,20 +89,9 @@
         </tbody>
     </table>
 
-    <table class="rekap">
-        <tr>
-            <td><strong>Hadir (tepat waktu):</strong> {{ $data['ringkasan']['tepatWaktu'] }}</td>
-            <td><strong>Terlambat:</strong> {{ $data['ringkasan']['terlambat'] }}</td>
-            <td><strong>Cuti:</strong> {{ $data['ringkasan']['cuti'] }}</td>
-            <td><strong>Sakit:</strong> {{ $data['ringkasan']['sakit'] }}</td>
-            <td><strong>DL:</strong> {{ $data['ringkasan']['dl'] }}</td>
-            <td><strong>Total terlambat:</strong> {{ $data['ringkasan']['totalMenitTerlambatTeks'] }}</td>
-        </tr>
-    </table>
-
     <div class="footer">
-        Tanggal Cetak: {{ \Carbon\CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'))->format('d-m-Y') }}<br>
-        Dicetak oleh: {{ auth()->user()?->nama ?? 'Administrator' }}
+        Tanggal Cetak : {{ \Carbon\CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'))->format('d-m-Y') }}<br>
+        <span class="pemeriksa">Checked by Administrator</span>
     </div>
 </body>
 </html>

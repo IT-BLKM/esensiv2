@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Pegawai;
 
 use App\Actions\Laporan\RekapKehadiranAction;
 use App\Actions\Pengajuan\CariPengajuanDlHariIniAction;
+use App\Actions\Pengaturan\AmbilLokasiKantorAction;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -21,10 +22,12 @@ class PresensiHalamanController extends Controller
         Request $request,
         RekapKehadiranAction $rekap,
         CariPengajuanDlHariIniAction $cariDlHariIni,
+        AmbilLokasiKantorAction $ambilLokasiKantor,
     ): View {
         /** @var User $user */
         $user = $request->user();
         $pegawai = $user->pegawai;
+        $lokasi = $ambilLokasiKantor();
 
         $sekarang = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'));
 
@@ -32,9 +35,9 @@ class PresensiHalamanController extends Controller
             'hariIni' => $pegawai === null ? null : $rekap->hariIni($pegawai),
             'pengajuanDl' => $pegawai === null ? null : $cariDlHariIni($pegawai, $sekarang),
             'kantor' => [
-                'latitude' => (float) config('presensi.latitude'),
-                'longitude' => (float) config('presensi.longitude'),
-                'radius' => (int) config('presensi.radius'),
+                'latitude' => (float) $lokasi['latitude'],
+                'longitude' => (float) $lokasi['longitude'],
+                'radius' => $lokasi['radius'],
             ],
         ]);
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Laporan\HitungPotonganTunjanganKinerjaAction;
 use App\Actions\Laporan\LaporanSemuaPegawaiAction;
 use App\Models\JamKerja;
 use App\Models\Pegawai;
@@ -68,8 +69,58 @@ it('builds the H/DL/C/S/A matrix for every pegawai', function () {
         ->and($barisA['s'])->toBe(1)
         ->and($barisA['a'])->toBe(17)          // 21 hari kerja - 4 baris
         ->and($barisA['tl'])->toBe(1)
+        ->and($barisA['psw'])->toBe(0)
         ->and($barisB['h'])->toBe(0)
-        ->and($barisB['a'])->toBe(21);
+        ->and($barisB['a'])->toBe(21)
+        ->and($hasil['akhirPekan'])->toBe([1, 7, 8, 14, 15, 21, 22, 28, 29]);
+});
+
+it('counts pulang sebelum waktu in the PSW column', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftMatriksLaporan();
+    $pegawai = Pegawai::factory()->create(['nip' => '199302032022032001', 'nama' => 'Budi Santoso']);
+
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'tgl_presensi' => '2026-11-02',
+        'jam_masuk' => '07:30:00',
+        'jam_keluar' => '15:30:00',
+        'status' => 'hadir',
+    ]);
+
+    $hasil = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
+    $baris = collect($hasil['baris'])->firstWhere('id', $pegawai->id);
+
+    expect($baris['sel'][2])->toBe('H')
+        ->and($baris['tl'])->toBe(0)
+        ->and($baris['psw'])->toBe(1);
+});
+
+it('keeps replaced lateness as TL in the matrix while tukin removes its deduction', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftMatriksLaporan();
+    $pegawai = Pegawai::factory()->create(['nip' => '199302032022032001', 'nama' => 'Budi Santoso']);
+
+    // Masuk 07:50 (telat 20 menit), pulang 16:20 = jendela penggantian 16:20–16:25.
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'tgl_presensi' => '2026-11-02',
+        'jam_masuk' => '07:50:00',
+        'jam_keluar' => '16:20:00',
+        'status' => 'hadir',
+    ]);
+
+    $matriks = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
+    $baris = collect($matriks['baris'])->firstWhere('id', $pegawai->id);
+
+    $tukin = app(HitungPotonganTunjanganKinerjaAction::class)->bulanan($pegawai, 2026, 11);
+
+    expect($baris['sel'][2])->toBe('H!')
+        ->and($baris['tl'])->toBe(1)
+        ->and($tukin['ringkasan']['jumlahPenggantian'])->toBe(1)
+        ->and($tukin['ringkasan']['totalPersenTl'])->toBe(0.0);
 });
 
 it('refuses matrix access for a user without laporan permission', function () {
