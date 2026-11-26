@@ -63,7 +63,8 @@ it('renders the multipart form with every pengajuan field', function () {
         ->assertSee('name="lampiran"', false)
         ->assertSee('C01')
         ->assertSee('Sisa kuota tahun 2026')
-        ->assertSee('Wajib untuk Sakit lebih dari 3 hari kerja');
+        ->assertSee('Wajib untuk Sakit lebih dari 3 hari kerja')
+        ->assertDontSee('name="langsung_setujui"', false);
 });
 
 it('rejects jenis cuti without id_cuti with a validation error', function () {

@@ -42,7 +42,8 @@ pengajuan hanya membuat baris presensi pada hari kerja.
 4. **Input cuti/sakit/DL/izin historis**
    - Buka **Pengajuan** → **Buat pengajuan pegawai**.
    - Pilih pegawai, jenis, dan rentang tanggal sesuai catatan lama.
-   - Simpan, lalu buka detail dan tekan **Setujui**.
+   - Centang **Setujui langsung** bila data historis harus langsung approved,
+     atau simpan dulu lalu buka detail dan tekan **Setujui**.
    - Approval membuat baris presensi untuk setiap hari kerja dalam rentang.
      Sabtu/Minggu dan hari libur otomatis dilewati.
    - Untuk cuti tahunan gunakan **C01**. Untuk cuti alasan penting gunakan
@@ -60,6 +61,19 @@ pengajuan hanya membuat baris presensi pada hari kerja.
    - Rekap keterlambatan tetap kosong untuk hari yang belum punya baris
      presensi.
    - Setelah 1 Januari 2027, command rollover otomatis membuat tabungan 2026.
+
+## Pergantian tahun
+
+- Kuota cuti tahunan dihitung per tahun kalender; tidak ada angka yang perlu
+  di-reset manual.
+- Command `cuti:rollover-tahunan` berjalan otomatis setiap 1 Januari pukul
+  00.05 WIB dan juga dipanggil malas saat sisa cuti dibuka, sehingga tabungan
+  tahun sebelumnya tetap terbentuk bila cron sempat tidak jalan.
+- Tabungan lebih dari dua tahun otomatis diabaikan (hangus) oleh perhitungan.
+- **Hari libur tidak dibuat otomatis untuk tahun baru.** Admin perlu menambah
+  hari libur tahun berikutnya lewat menu **Hari Libur**. Halaman tersebut
+  memberi peringatan bila tahun berjalan belum punya hari libur.
+- Laporan dan filter tahun mengikuti data presensi; tidak perlu mengubah kode.
 
 ## Batasan penting
 

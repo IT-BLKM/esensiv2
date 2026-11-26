@@ -43,6 +43,19 @@ it('shows the holiday calendar', function () {
         ->assertSee(Carbon::parse($libur->tanggal)->locale('id')->translatedFormat('l, d F Y'));
 });
 
+it('warns when the current year has no holiday yet', function () {
+    $tahunIni = Carbon::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'))->year;
+
+    HariLibur::factory()->create([
+        'tanggal' => ($tahunIni - 2).'-01-01',
+        'nama' => 'Libur lama',
+    ]);
+
+    $this->actingAs(adminHariLibur())->get(route('admin.hari-libur.index'))
+        ->assertOk()
+        ->assertSee('Belum ada hari libur '.$tahunIni);
+});
+
 it('lets an admin create a holiday', function () {
     $this->actingAs(adminHariLibur())
         ->post(route('admin.hari-libur.store'), [

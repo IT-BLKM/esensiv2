@@ -23,8 +23,10 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class PengajuanController extends Controller
 {
@@ -88,17 +90,62 @@ class PengajuanController extends Controller
         ]);
     }
 
-    public function store(StorePengajuanAdminRequest $request, CreatePengajuanAction $create): RedirectResponse
-    {
+    public function store(
+        StorePengajuanAdminRequest $request,
+        CreatePengajuanAction $create,
+        ApprovePengajuanAction $approve,
+    ): RedirectResponse {
         /** @var User $user */
         $user = $request->user();
         $data = $request->validated();
         $pegawai = Pegawai::query()->findOrFail((int) $data['id_pegawai']);
+        $langsungSetujui = (bool) ($data['langsung_setujui'] ?? false);
+        unset($data['langsung_setujui']);
 
-        $pengajuan = $create($user, $data, $pegawai);
+        $pengajuan = null;
+
+        try {
+            /** @var array{pengajuan: Pengajuan, jumlahPresensi: int} $hasil */
+            $hasil = DB::transaction(function () use (
+                $create,
+                $approve,
+                $user,
+                $data,
+                $pegawai,
+                $langsungSetujui,
+                &$pengajuan,
+            ): array {
+                $pengajuan = $create($user, $data, $pegawai);
+
+                if (! $langsungSetujui) {
+                    return ['pengajuan' => $pengajuan, 'jumlahPresensi' => 0];
+                }
+
+                return $approve($user, $pengajuan);
+            });
+        } catch (Throwable $exception) {
+            // Lampiran disimpan di disk sebelum transaksi; bersihkan bila
+            // persetujuan langsung gagal dan baris pengajuan di-rollback.
+            if ($pengajuan !== null && is_string($pengajuan->lampiran) && $pengajuan->lampiran !== '') {
+                Storage::disk('local')->delete($pengajuan->lampiran);
+            }
+
+            throw $exception;
+        }
+
+        $pengajuan = $hasil['pengajuan'];
+
+        if (! $langsungSetujui) {
+            return redirect()->route('admin.pengajuan.show', $pengajuan)
+                ->with('success', "Pengajuan untuk {$pegawai->nama} berhasil dibuat dan menunggu persetujuan.");
+        }
+
+        $pesan = $pengajuan->jenis === 'dl' && $pengajuan->mode_dl === Pengajuan::MODE_DL_SETENGAH
+            ? 'Pengajuan Dinas Luar setengah hari dibuat dan langsung disetujui. Pegawai cukup absen sekali pada hari tersebut.'
+            : "Pengajuan untuk {$pegawai->nama} dibuat dan langsung disetujui. {$hasil['jumlahPresensi']} baris presensi hari kerja dibuat.";
 
         return redirect()->route('admin.pengajuan.show', $pengajuan)
-            ->with('success', "Pengajuan untuk {$pegawai->nama} berhasil dibuat dan menunggu persetujuan.");
+            ->with('success', $pesan);
     }
 
     public function show(Pengajuan $pengajuan, DaftarHariKerjaAction $daftarHariKerja): View

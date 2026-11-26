@@ -10,6 +10,7 @@
     $tampilkanAlasanHaji = $jenisTerpilih === 'cuti' && $cutiTerpilih?->kode === 'C04';
     $cutiTahunan = $cuti->firstWhere('kode', 'C01');
     $ringkasTahunan = $cutiTahunan === null ? null : ($sisa[$cutiTahunan->id] ?? null);
+    $bisaLangsungSetujui = $bisaLangsungSetujui ?? false;
 @endphp
 
 <form method="POST" action="{{ $aksi }}" enctype="multipart/form-data" class="flex flex-col gap-4" novalidate>
@@ -34,7 +35,13 @@
                     </option>
                 @endforeach
             </select>
-            <p class="mt-1 text-xs text-gray-500">Pengajuan disimpan atas nama pegawai ini dan tetap berstatus menunggu.</p>
+            <p class="mt-1 text-xs text-gray-500">
+                @if ($bisaLangsungSetujui)
+                    Pengajuan dapat langsung disetujui dengan centang di bagian bawah form.
+                @else
+                    Pengajuan disimpan atas nama pegawai ini dan tetap berstatus menunggu.
+                @endif
+            </p>
             @error('id_pegawai')
                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
             @enderror
@@ -218,6 +225,31 @@
             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
         @enderror
     </div>
+
+    @if ($bisaLangsungSetujui)
+        <div class="rounded-md border border-brand-200 bg-brand-50 px-3 py-2">
+            <label for="langsung_setujui" class="flex items-start gap-2 text-sm text-gray-700">
+                <input
+                    type="checkbox"
+                    id="langsung_setujui"
+                    name="langsung_setujui"
+                    value="1"
+                    @checked(old('langsung_setujui'))
+                    class="mt-0.5 h-4 w-4 rounded border-gray-300 accent-brand-600"
+                >
+                <span>
+                    <span class="font-medium text-gray-900">Setujui langsung</span>
+                    <span class="block text-xs text-gray-600">
+                        Gunakan untuk input data historis. Pengajuan langsung disetujui dan baris presensi
+                        hari kerja dibuat dalam satu transaksi.
+                    </span>
+                </span>
+            </label>
+            @error('langsung_setujui')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+    @endif
 
     <div class="flex items-center gap-3">
         <x-button type="submit">{{ $tombol ?? 'Kirim pengajuan' }}</x-button>

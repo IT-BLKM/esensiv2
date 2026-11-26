@@ -17,6 +17,13 @@
             <x-alert variant="success">{{ session('success') }}</x-alert>
         @endif
 
+        @if ($jumlahTahunIni === 0)
+            <x-alert variant="warning" title="Belum ada hari libur {{ $tahunIni }}">
+                Tambahkan hari libur nasional tahun ini agar cuti/sakit/DL dan laporan tidak
+                menghitung tanggal libur sebagai hari kerja.
+            </x-alert>
+        @endif
+
         <x-card>
             <x-table>
                 <thead>
