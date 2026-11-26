@@ -15,6 +15,7 @@
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'route' => 'dashboard', 'pola' => 'dashboard'],
         ['label' => 'Presensi', 'icon' => 'presensi', 'route' => 'presensi.index', 'pola' => 'presensi.*'],
         ['label' => 'Histori', 'icon' => 'histori', 'route' => 'histori.index', 'pola' => 'histori.*'],
+        ['label' => 'TUKIN', 'icon' => 'tukin', 'route' => 'tukin.index', 'pola' => 'tukin.*'],
         ['label' => 'Pengajuan', 'icon' => 'pengajuan', 'route' => 'pengajuan.index', 'pola' => 'pengajuan.*'],
         ['label' => 'Profil', 'icon' => 'user', 'route' => 'profil', 'pola' => 'profil'],
     ];

@@ -2,7 +2,10 @@
 
 namespace App\Actions\Laporan;
 
+use App\Actions\Tukin\AmbilKoreksiTukinAction;
+use App\Actions\Tukin\LengkapiTukinAction;
 use App\Models\Pegawai;
+use App\Models\TukinNominal;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Gate;
@@ -17,6 +20,8 @@ class RekapTukinSemuaPegawaiAction
 {
     public function __construct(
         private readonly HitungPotonganTunjanganKinerjaAction $hitungTukin,
+        private readonly AmbilKoreksiTukinAction $ambilKoreksi,
+        private readonly LengkapiTukinAction $lengkapiTukin,
     ) {}
 
     /**
@@ -33,19 +38,28 @@ class RekapTukinSemuaPegawaiAction
         $pegawai = Pegawai::query()
             ->with('departemen:id,nama')
             ->orderBy('nama')
-            ->get(['id', 'nip', 'nama', 'id_dept']);
+            ->get(['id', 'nip', 'nama', 'jabatan', 'id_dept']);
 
+        $nominal = TukinNominal::query()->pluck('nominal', 'jabatan');
+        $koreksi = $this->ambilKoreksi->semua($tahun, $bulan);
         $baris = [];
 
         foreach ($pegawai as $item) {
             $hasil = $bulan === null
                 ? $this->hitungTukin->tahunan($item, $tahun)
                 : $this->hitungTukin->bulanan($item, $tahun, $bulan);
+            $nominalPegawai = $nominal->get((string) $item->getAttribute('jabatan'));
+            $hasil = ($this->lengkapiTukin)(
+                $hasil,
+                $nominalPegawai === null ? null : (int) $nominalPegawai,
+                $koreksi->get($item->id) ?? collect(),
+            );
 
             $baris[] = [
                 'id' => (int) $item->getAttribute('id'),
                 'nip' => (string) $item->getAttribute('nip'),
                 'nama' => (string) $item->getAttribute('nama'),
+                'jabatan' => (string) $item->getAttribute('jabatan'),
                 'departemen' => $item->departemen?->getAttribute('nama'),
                 'hariPotongan' => count(array_filter(
                     $hasil['baris'],
@@ -55,8 +69,14 @@ class RekapTukinSemuaPegawaiAction
             ];
         }
 
-        $totalPersenTl = round(array_sum(array_column(array_column($baris, 'ringkasan'), 'totalPersenTl')), 2);
-        $totalPersenPsw = round(array_sum(array_column(array_column($baris, 'ringkasan'), 'totalPersenPsw')), 2);
+        $ringkasanPegawai = array_column($baris, 'ringkasan');
+        $totalPersenTl = round(array_sum(array_column($ringkasanPegawai, 'totalPersenTl')), 2);
+        $totalPersenPsw = round(array_sum(array_column($ringkasanPegawai, 'totalPersenPsw')), 2);
+        $totalPersenAkhir = round(array_sum(array_column($ringkasanPegawai, 'totalPersenAkhir')), 2);
+        $nominalPotongan = array_filter(
+            array_column($ringkasanPegawai, 'potonganNominal'),
+            fn (mixed $nilai): bool => $nilai !== null,
+        );
 
         return [
             'labelPeriode' => $bulan === null
@@ -69,11 +89,14 @@ class RekapTukinSemuaPegawaiAction
                 'totalPegawai' => count($baris),
                 'pegawaiKenaPotongan' => count(array_filter(
                     $baris,
-                    fn (array $item): bool => $item['ringkasan']['totalPersen'] > 0,
+                    fn (array $item): bool => $item['ringkasan']['totalPersenAkhir'] > 0,
                 )),
                 'totalPersenTl' => $totalPersenTl,
                 'totalPersenPsw' => $totalPersenPsw,
                 'totalPersen' => round($totalPersenTl + $totalPersenPsw, 2),
+                'totalPersenAkhir' => $totalPersenAkhir,
+                'totalKoreksi' => round(array_sum(array_column($ringkasanPegawai, 'koreksiPersen')), 2),
+                'totalNominalPotongan' => $nominalPotongan === [] ? null : (int) array_sum($nominalPotongan),
                 'totalHariPotongan' => array_sum(array_column($baris, 'hariPotongan')),
             ],
         ];

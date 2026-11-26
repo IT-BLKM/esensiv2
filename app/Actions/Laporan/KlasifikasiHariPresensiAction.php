@@ -5,6 +5,7 @@ namespace App\Actions\Laporan;
 use App\Actions\Presensi\HitungMenitPulangCepatAction;
 use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
+use App\Actions\Tunjangan\AmbilTingkatTunjanganAction;
 use App\Models\Presensi;
 use Illuminate\Support\Collection;
 
@@ -26,6 +27,7 @@ class KlasifikasiHariPresensiAction
         private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
         private readonly HitungMenitPulangCepatAction $hitungMenitPulangCepat,
         private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
+        private readonly AmbilTingkatTunjanganAction $ambilTingkat,
     ) {}
 
     /**
@@ -122,7 +124,7 @@ class KlasifikasiHariPresensiAction
      */
     private function daftarTingkat(string $kunci): Collection
     {
-        return collect(config("tunjangan.{$kunci}", []));
+        return ($this->ambilTingkat)($kunci);
     }
 
     private function tingkat(string $kunci, int $menit): ?string

@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Laporan\CetakPdfTukinAction;
-use App\Actions\Laporan\HitungPotonganTunjanganKinerjaAction;
+use App\Actions\Laporan\CetakSlipTukinAction;
 use App\Actions\Laporan\RekapTukinSemuaPegawaiAction;
 use App\Actions\Laporan\TulisExcelTukinAction;
+use App\Actions\Tukin\AmbilDetailTukinAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TukinRequest;
 use App\Models\Pegawai;
@@ -20,7 +21,7 @@ class TukinExportController extends Controller
     public function excel(
         TukinRequest $request,
         RekapTukinSemuaPegawaiAction $rekap,
-        HitungPotonganTunjanganKinerjaAction $hitungTukin,
+        AmbilDetailTukinAction $ambilDetail,
         TulisExcelTukinAction $tulis,
     ): BinaryFileResponse {
         [$user, $pegawai, $tahun, $bulan, $labelPeriode, $kodePeriode] = $this->siapkan($request);
@@ -30,9 +31,7 @@ class TukinExportController extends Controller
             $path = $tulis->semua($data);
             $namaFile = "rekap-tukin-semua-{$kodePeriode}.xlsx";
         } else {
-            $data = $bulan === null
-                ? $hitungTukin->tahunan($pegawai, $tahun)
-                : $hitungTukin->bulanan($pegawai, $tahun, $bulan);
+            $data = $ambilDetail($pegawai, $tahun, $bulan);
             $path = $tulis->pegawai($data, $pegawai, $labelPeriode);
             $namaFile = 'laporan-tukin-'.Str::slug($pegawai->nama)."-{$kodePeriode}.xlsx";
         }
@@ -45,7 +44,7 @@ class TukinExportController extends Controller
     public function pdf(
         TukinRequest $request,
         RekapTukinSemuaPegawaiAction $rekap,
-        HitungPotonganTunjanganKinerjaAction $hitungTukin,
+        AmbilDetailTukinAction $ambilDetail,
         CetakPdfTukinAction $cetak,
     ): Response {
         [$user, $pegawai, $tahun, $bulan, $labelPeriode, $kodePeriode] = $this->siapkan($request);
@@ -55,9 +54,7 @@ class TukinExportController extends Controller
             $pdf = $cetak->semua($data);
             $namaFile = "rekap-tukin-semua-{$kodePeriode}.pdf";
         } else {
-            $data = $bulan === null
-                ? $hitungTukin->tahunan($pegawai, $tahun)
-                : $hitungTukin->bulanan($pegawai, $tahun, $bulan);
+            $data = $ambilDetail($pegawai, $tahun, $bulan);
             $pdf = $cetak->pegawai($data, $pegawai, $labelPeriode);
             $namaFile = 'laporan-tukin-'.Str::slug($pegawai->nama)."-{$kodePeriode}.pdf";
         }
@@ -65,6 +62,35 @@ class TukinExportController extends Controller
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$namaFile.'"',
+        ]);
+    }
+
+    public function slip(
+        TukinRequest $request,
+        Pegawai $pegawai,
+        AmbilDetailTukinAction $ambilDetail,
+        CetakSlipTukinAction $cetak,
+    ): Response {
+        $this->authorize('view', $pegawai);
+
+        $filter = $request->validated();
+        $sekarang = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'));
+        $tahun = (int) ($filter['tahun'] ?? $sekarang->year);
+        $bulan = $request->query->has('bulan')
+            ? (isset($filter['bulan']) ? (int) $filter['bulan'] : null)
+            : $sekarang->month;
+        $labelPeriode = $bulan === null
+            ? (string) $tahun
+            : CarbonImmutable::create($tahun, $bulan, 1)
+                ->locale('id')
+                ->translatedFormat('F Y');
+        $kodePeriode = $bulan === null ? (string) $tahun : sprintf('%04d-%02d', $tahun, $bulan);
+        $data = $ambilDetail($pegawai, $tahun, $bulan);
+        $pdf = $cetak($data, $pegawai, $labelPeriode);
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="slip-tukin-'.Str::slug($pegawai->nama)."-{$kodePeriode}.pdf\"",
         ]);
     }
 

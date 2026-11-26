@@ -24,6 +24,8 @@
         ['label' => 'Laporan', 'icon' => 'laporan', 'route' => 'admin.laporan.index', 'pola' => 'admin.laporan.*'],
         ['label' => 'Rekap', 'icon' => 'laporan', 'route' => 'admin.rekap.index', 'pola' => 'admin.rekap.*'],
         ['label' => 'TUKIN', 'icon' => 'tukin', 'route' => 'admin.tukin.index', 'pola' => 'admin.tukin.*'],
+        ['label' => 'Nominal TUKIN', 'icon' => 'tukin', 'route' => 'admin.tukin-nominal.index', 'pola' => 'admin.tukin-nominal.*'],
+        ['label' => 'Aturan TUKIN', 'icon' => 'konfigurasi', 'route' => 'admin.tunjangan.index', 'pola' => 'admin.tunjangan.*'],
         ['label' => 'Konfigurasi', 'icon' => 'konfigurasi', 'route' => 'admin.konfigurasi.index', 'pola' => 'admin.konfigurasi.*'],
     ];
 @endphp

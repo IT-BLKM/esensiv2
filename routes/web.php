@@ -16,6 +16,10 @@ use App\Http\Controllers\Admin\RekapKeterlambatanController;
 use App\Http\Controllers\Admin\SaldoCutiController;
 use App\Http\Controllers\Admin\TukinController;
 use App\Http\Controllers\Admin\TukinExportController;
+use App\Http\Controllers\Admin\TukinKoreksiController;
+use App\Http\Controllers\Admin\TukinNominalController;
+use App\Http\Controllers\Admin\TukinPeriodeController;
+use App\Http\Controllers\Admin\TunjanganTingkatController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\Pegawai\DashboardController;
@@ -28,6 +32,7 @@ use App\Http\Controllers\Pegawai\PengajuanFormController;
 use App\Http\Controllers\Pegawai\PresensiController;
 use App\Http\Controllers\Pegawai\PresensiHalamanController;
 use App\Http\Controllers\Pegawai\StorePresensiController;
+use App\Http\Controllers\Pegawai\TukinController as TukinPegawaiController;
 use App\Http\Controllers\PengajuanLampiranController;
 use App\Http\Controllers\PresensiFotoController;
 use Illuminate\Support\Facades\Route;
@@ -59,6 +64,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/presensi', StorePresensiController::class)->name('presensi.store');
 
         Route::get('/histori', HistoriPresensiController::class)->name('histori.index');
+        Route::get('/tukin', TukinPegawaiController::class)->name('tukin.index');
 
         /*
          * Daftar + form pengajuan pegawai (issue #36–#38). Nama route
@@ -171,6 +177,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/tukin', TukinController::class)->name('tukin.index');
         Route::get('/tukin/export/excel', [TukinExportController::class, 'excel'])->name('tukin.export.excel');
         Route::get('/tukin/export/pdf', [TukinExportController::class, 'pdf'])->name('tukin.export.pdf');
+        Route::get('/tukin/{pegawai}/slip', [TukinExportController::class, 'slip'])->name('tukin.slip');
+        Route::post('/tukin/koreksi', [TukinKoreksiController::class, 'store'])->name('tukin.koreksi.store');
+        Route::post('/tukin/periode/kunci', [TukinPeriodeController::class, 'kunci'])->name('tukin.periode.kunci');
+        Route::post('/tukin/periode/{tukinPeriode}/buka', [TukinPeriodeController::class, 'buka'])->name('tukin.periode.buka');
+        Route::resource('tukin-nominal', TukinNominalController::class)
+            ->parameters(['tukin-nominal' => 'tukinNominal'])
+            ->except('show');
+        Route::get('/tunjangan', [TunjanganTingkatController::class, 'index'])->name('tunjangan.index');
+        Route::put('/tunjangan', [TunjanganTingkatController::class, 'update'])->name('tunjangan.update');
         Route::get('/konfigurasi', [KonfigurasiJamKerjaController::class, 'index'])->name('konfigurasi.index');
         Route::put('/konfigurasi/lokasi', [KonfigurasiJamKerjaController::class, 'updateLokasi'])
             ->name('konfigurasi.lokasi.update');

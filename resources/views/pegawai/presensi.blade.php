@@ -20,6 +20,7 @@
             $dlSetengah = $pengajuanDl !== null
                 && $pengajuanDl->jenis === 'dl'
                 && $pengajuanDl->mode_dl === 'setengah';
+            $periodeTerkunci = $periodeTerkunci ?? false;
 
             if ($status !== null && $status !== 'hadir') {
                 $mode = 'libur';
@@ -34,6 +35,10 @@
                 $mode = 'selesai';
                 $labelStatus = 'Presensi selesai';
                 $variantStatus = 'success';
+            } elseif ($periodeTerkunci && $status === null) {
+                $mode = 'terkunci';
+                $labelStatus = 'Periode TUKIN terkunci';
+                $variantStatus = 'warning';
             } elseif (($hariIni['hariLibur'] ?? false) && $status === null) {
                 $mode = 'libur-nasional';
                 $labelStatus = 'Hari libur';
@@ -81,6 +86,7 @@
                 'dl-setengah' => 'DL setengah hari: cukup absen sekali hari ini, tanpa absen pulang.',
                 'dl-setengah-selesai' => 'Absen DL setengah hari sudah tercatat; absen pulang tidak diperlukan.',
                 'tanpa-shift' => 'Tidak ada shift terjadwal hari ini.',
+                'terkunci' => 'Periode TUKIN bulan ini sudah dikunci oleh admin.',
                 'libur-nasional' => 'Hari ini hari libur nasional, jadi absen tidak diperlukan.',
                 'libur' => 'Hari ini tercatat '.$labelStatus.'.',
                 'selesai' => 'Presensi hari ini sudah lengkap.',
@@ -247,6 +253,11 @@
                         <x-alert variant="info">
                             Tidak ada shift terjadwal hari ini, jadi tombol absen dinonaktifkan.
                             Hubungi administrator bila jadwal ini keliru.
+                        </x-alert>
+                    @elseif ($mode === 'terkunci')
+                        <x-alert variant="warning">
+                            Periode TUKIN bulan ini sudah dikunci. Presensi tidak dapat diubah;
+                            hubungi admin bila ada data yang perlu dikoreksi.
                         </x-alert>
                     @elseif ($mode === 'libur-nasional')
                         <x-alert variant="info">

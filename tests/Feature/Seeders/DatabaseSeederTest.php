@@ -44,6 +44,7 @@ test('seeds the full development dataset when all migrations are available', fun
     $this->assertDatabaseCount('departemen', 5);
     $this->assertDatabaseCount('jam_kerja', 3);
     $this->assertDatabaseCount('hari_libur', 21);
+    $this->assertDatabaseCount('tunjangan_tingkat', 7);
     $this->assertDatabaseCount('pegawai', 50);
     $this->assertDatabaseCount('cuti', 4);
     $this->assertDatabaseCount('user', 52);
@@ -135,6 +136,7 @@ test('seeder can be run twice without creating duplicate demo data', function ()
     $this->assertDatabaseCount('departemen', 5);
     $this->assertDatabaseCount('jam_kerja', 3);
     $this->assertDatabaseCount('hari_libur', 21);
+    $this->assertDatabaseCount('tunjangan_tingkat', 7);
     $this->assertDatabaseCount('pegawai', 50);
     $this->assertDatabaseCount('user', 52);
     $this->assertDatabaseCount('konfigurasi_jam_kerja', 254);
@@ -162,6 +164,7 @@ test('production seeding only creates master data without demo accounts', functi
     $this->assertDatabaseCount('departemen', 5);
     $this->assertDatabaseCount('cuti', 4);
     $this->assertDatabaseCount('hari_libur', 21);
+    $this->assertDatabaseCount('tunjangan_tingkat', 7);
     $this->assertDatabaseCount('user', 0);
     $this->assertDatabaseCount('pegawai', 0);
     $this->assertDatabaseCount('pengajuan', 0);

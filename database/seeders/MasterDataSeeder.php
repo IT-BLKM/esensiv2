@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Cuti;
 use App\Models\Departemen;
 use App\Models\JamKerja;
+use App\Models\TunjanganTingkat;
 use Illuminate\Database\Seeder;
 
 class MasterDataSeeder extends Seeder
@@ -60,6 +61,22 @@ class MasterDataSeeder extends Seeder
             ['kode' => 'C04', 'nama' => 'Cuti Besar', 'maks_hari' => 90, 'kuota' => 90, 'maks_bawa' => 0],
         ] as $cuti) {
             Cuti::updateOrCreate(['kode' => $cuti['kode']], $cuti);
+        }
+
+        foreach ([
+            TunjanganTingkat::KATEGORI_KETERLAMBATAN => config('tunjangan.keterlambatan', []),
+            TunjanganTingkat::KATEGORI_PULANG_CEPAT => config('tunjangan.pulang_cepat', []),
+        ] as $kategori => $daftar) {
+            foreach ($daftar as $tingkat) {
+                TunjanganTingkat::updateOrCreate(
+                    ['kategori' => $kategori, 'level' => $tingkat['level']],
+                    [
+                        'min' => $tingkat['min'],
+                        'max' => $tingkat['max'],
+                        'persen' => $tingkat['persen'],
+                    ],
+                );
+            }
         }
     }
 }

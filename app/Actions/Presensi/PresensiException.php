@@ -29,6 +29,15 @@ final class PresensiException extends RuntimeException
         return new self('hari_libur', 'Hari ini adalah hari libur, jadi presensi tidak perlu dan tidak bisa dicatat.');
     }
 
+    public static function periodeTerkunci(): self
+    {
+        return new self(
+            'periode_terkunci',
+            'Periode TUKIN bulan ini sudah dikunci. Hubungi admin bila presensi perlu dikoreksi.',
+            409,
+        );
+    }
+
     public static function radius(float $jarak, int $radius): self
     {
         return new self('radius', sprintf(

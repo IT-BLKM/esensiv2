@@ -41,6 +41,8 @@ it('renders the main admin pages from seeded data', function () {
         'admin.hari-libur.index',
         'admin.saldo-cuti.index',
         'admin.tukin.index',
+        'admin.tukin-nominal.index',
+        'admin.tunjangan.index',
     ] as $route) {
         $this->actingAs($admin)->get(route($route))->assertOk();
     }
@@ -54,6 +56,7 @@ it('renders the main pegawai pages from seeded data', function () {
         'dashboard',
         'presensi.index',
         'histori.index',
+        'tukin.index',
         'pengajuan.index',
         'pengajuan.create',
         'profil',
