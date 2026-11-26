@@ -13,8 +13,10 @@ it('allows only admins to configure employee shifts', function () {
 
     expect(Gate::forUser($admin)->allows('viewAny', KonfigurasiJamKerja::class))->toBeTrue()
         ->and(Gate::forUser($admin)->allows('update', KonfigurasiJamKerja::class))->toBeTrue()
+        ->and(Gate::forUser($admin)->allows('updateLokasi', KonfigurasiJamKerja::class))->toBeTrue()
         ->and(Gate::forUser($admin)->allows('delete', KonfigurasiJamKerja::class))->toBeTrue()
         ->and(Gate::forUser($pegawai)->denies('viewAny', KonfigurasiJamKerja::class))->toBeTrue()
         ->and(Gate::forUser($pegawai)->denies('update', KonfigurasiJamKerja::class))->toBeTrue()
+        ->and(Gate::forUser($pegawai)->denies('updateLokasi', KonfigurasiJamKerja::class))->toBeTrue()
         ->and(Gate::forUser($pegawai)->denies('delete', KonfigurasiJamKerja::class))->toBeTrue();
 });

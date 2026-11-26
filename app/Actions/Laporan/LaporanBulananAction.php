@@ -2,6 +2,7 @@
 
 namespace App\Actions\Laporan;
 
+use App\Actions\Presensi\HitungMenitPulangCepatAction;
 use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
 use App\Models\Pegawai;
@@ -22,6 +23,7 @@ class LaporanBulananAction
     public function __construct(
         private readonly RekapKehadiranAction $rekap,
         private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
+        private readonly HitungMenitPulangCepatAction $hitungMenitPulangCepat,
         private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
     ) {}
 
@@ -38,7 +40,9 @@ class LaporanBulananAction
      *         jamKeluar: string|null,
      *         status: string,
      *         statusLabel: string,
+     *         kodeStatus: string,
      *         menitTerlambat: int,
+     *         menitPulangCepat: int,
      *         jmlJam: string,
      *         penggantian: array<string, mixed>|null
      *     }>,
@@ -75,7 +79,9 @@ class LaporanBulananAction
                     'jamKeluar' => $this->formatJam($item->jam_keluar),
                     'status' => $item->status,
                     'statusLabel' => Presensi::LABEL_STATUS[$item->status] ?? ucfirst($item->status),
+                    'kodeStatus' => $this->kodeStatus($item->status),
                     'menitTerlambat' => ($this->hitungMenitTerlambat)($item),
+                    'menitPulangCepat' => ($this->hitungMenitPulangCepat)($item),
                     'jmlJam' => $this->jmlJam($item->jam_masuk, $item->jam_keluar),
                     'penggantian' => ($this->hitungPenggantian)($item),
                 ];
@@ -88,6 +94,17 @@ class LaporanBulananAction
             'baris' => $baris,
             'ringkasan' => $this->rekap->ringkasBulanan($presensi, $awal),
         ];
+    }
+
+    private function kodeStatus(string $status): string
+    {
+        return match ($status) {
+            'hadir' => 'h',
+            'dl' => 'd',
+            'cuti' => 'c',
+            'sakit' => 's',
+            default => 'a',
+        };
     }
 
     private function formatJam(?string $jam): ?string

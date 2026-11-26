@@ -2,6 +2,7 @@
 
 namespace App\Actions\Laporan;
 
+use App\Actions\Presensi\HitungMenitPulangCepatAction;
 use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -18,17 +19,23 @@ use Illuminate\Support\Facades\Gate;
  * Kode sel mengikuti ringkasan yang dipakai laporan lama:
  * H = hadir, H! = hadir terlambat, DL = dinas luar, C = cuti, S = sakit,
  * A = alpa. Sel kosong berarti hari tanpa shift (akhir pekan/libur).
+ *
+ * Kolom TL dan PSW sengaja dihitung dari presensi mentah, bukan dari potongan
+ * tunjangan: keterlambatan yang sudah diganti tetap tercatat di laporan,
+ * sedangkan HitungPotonganTunjanganKinerjaAction yang menghapus potongannya.
  */
 class LaporanSemuaPegawaiAction
 {
     public function __construct(
         private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
+        private readonly HitungMenitPulangCepatAction $hitungMenitPulangCepat,
     ) {}
 
     /**
      * @return array{
      *     labelPeriode: string,
      *     hari: list<int>,
+     *     akhirPekan: list<int>,
      *     baris: list<array{
      *         id: int,
      *         nip: string,
@@ -39,7 +46,8 @@ class LaporanSemuaPegawaiAction
      *         c: int,
      *         s: int,
      *         a: int,
-     *         tl: int
+     *         tl: int,
+     *         psw: int
      *     }>
      * }
      */
@@ -60,7 +68,7 @@ class LaporanSemuaPegawaiAction
         $presensi = Presensi::query()
             ->with(['jamKerja', 'pengajuan'])
             ->whereBetween('tgl_presensi', [$awal->toDateString(), $akhir->toDateString()])
-            ->get(['id_pegawai', 'id_jam_kerja', 'id_pengajuan', 'tgl_presensi', 'jam_masuk', 'status'])
+            ->get(['id_pegawai', 'id_jam_kerja', 'id_pengajuan', 'tgl_presensi', 'jam_masuk', 'jam_keluar', 'status'])
             ->groupBy('id_pegawai');
 
         $baris = [];
@@ -74,7 +82,7 @@ class LaporanSemuaPegawaiAction
                 ->all();
 
             $sel = [];
-            $hitung = ['H' => 0, 'DL' => 0, 'C' => 0, 'S' => 0, 'A' => 0, 'TL' => 0];
+            $hitung = ['H' => 0, 'DL' => 0, 'C' => 0, 'S' => 0, 'A' => 0, 'TL' => 0, 'PSW' => 0];
 
             for ($hari = 1; $hari <= $jumlahHari; $hari++) {
                 $tanggal = $awal->setDay($hari);
@@ -86,6 +94,12 @@ class LaporanSemuaPegawaiAction
                     if ($kode === 'H' && ($this->hitungMenitTerlambat)($presensiHari) > 0) {
                         $kode = 'H!';
                         $hitung['TL']++;
+                    }
+
+                    if ($kode === 'H' || $kode === 'H!') {
+                        if (($this->hitungMenitPulangCepat)($presensiHari) > 0) {
+                            $hitung['PSW']++;
+                        }
                     }
                 } elseif ($this->hariKerja($tanggal, $hariKerja)) {
                     $kode = 'A';
@@ -112,12 +126,17 @@ class LaporanSemuaPegawaiAction
                 's' => $hitung['S'],
                 'a' => $hitung['A'],
                 'tl' => $hitung['TL'],
+                'psw' => $hitung['PSW'],
             ];
         }
 
         return [
             'labelPeriode' => $awal->locale('id')->translatedFormat('F Y'),
             'hari' => range(1, $jumlahHari),
+            'akhirPekan' => array_values(array_filter(
+                range(1, $jumlahHari),
+                fn (int $hari): bool => $awal->setDay($hari)->isWeekend(),
+            )),
             'baris' => $baris,
         ];
     }

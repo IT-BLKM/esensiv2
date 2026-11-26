@@ -7,10 +7,10 @@ return [
     | Lokasi Kantor
     |--------------------------------------------------------------------------
     |
-    | Koordinat dan radius yang dipakai untuk memvalidasi presensi. Nilai
-    | dikonfigurasi lewat .env agar tiap lingkungan bisa berbeda tanpa
-    | mengubah kode, dan hanya-baca di aplikasi — ubahnya lewat .env lalu
-    | `php artisan config:clear`/restart server (issue #30).
+    | Koordinat dan radius yang dipakai untuk memvalidasi presensi. Admin dapat
+    | mengubahnya dari halaman Konfigurasi; nilai di tabel `pengaturan` menang
+    | atas config ini. Nilai di bawah adalah fallback awal (mis. sebelum admin
+    | menyimpan) dan dapat diisi lewat .env per lingkungan (issue #30/#137).
     |
     | Satuan:
     |   latitude  — derajat desimal, mis. -6.2088 (lintang, minus = selatan)

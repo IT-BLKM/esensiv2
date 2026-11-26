@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Pegawai;
+use App\Models\Pengaturan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
@@ -8,17 +10,16 @@ uses(LazilyRefreshDatabase::class);
 beforeEach(fn () => $this->withoutVite());
 
 /**
- * Nomor issue yang diuji di sini: #30 — halaman info lokasi & radius kantor.
- *
- * Nilai selalu dibaca dari config(), bukan ditulis literal, supaya test tetap
- * benar walau .env tiap developer berbeda.
+ * Nomor issue yang diuji di sini: #30 (info lokasi) dan #137 (admin dapat
+ * mengubah koordinat/radius). Nilai awal selalu dibaca dari config(), bukan
+ * ditulis literal, supaya test tetap benar walau .env tiap developer berbeda.
  */
 function adminInfoLokasi(): User
 {
     return User::factory()->create(['role' => 'admin']);
 }
 
-it('shows the office location and radius read from config', function () {
+it('shows the office location and radius as editable fields', function () {
     $radius = (int) config('presensi.radius');
 
     $this->actingAs(adminInfoLokasi())->get(route('admin.konfigurasi.index'))
@@ -28,8 +29,9 @@ it('shows the office location and radius read from config', function () {
         ->assertSee((string) config('presensi.latitude'))
         ->assertSee('Bujur (longitude)')
         ->assertSee((string) config('presensi.longitude'))
-        ->assertSee('Radius absen')
-        ->assertSee(number_format($radius, 0, ',', '.').' m')
+        ->assertSee('Radius absen (meter)')
+        ->assertSee('value="'.$radius.'"', false)
+        ->assertSee('Simpan lokasi')
         ->assertSee('Buka di peta');
 });
 
@@ -42,61 +44,85 @@ it('links the coordinates to a map without hardcoding a url literal', function (
         ->assertSee('rel="noopener noreferrer"', false);
 });
 
-it('keeps the location card read-only with no field to edit', function () {
-    // Layout admin punya form logout, jadi yang dicek hanya medan lokasi.
-    $this->actingAs(adminInfoLokasi())->get(route('admin.konfigurasi.index'))
-        ->assertOk()
-        ->assertDontSee('name="latitude"', false)
-        ->assertDontSee('name="longitude"', false)
-        ->assertDontSee('name="radius"', false)
-        ->assertDontSee('name="PRESENSI_', false);
-});
+it('lets an admin save the office coordinates and radius', function () {
+    $this->actingAs(adminInfoLokasi())
+        ->put(route('admin.konfigurasi.lokasi.update'), [
+            'latitude' => '-3.0123456',
+            'longitude' => '104.7123456',
+            'radius' => 2500,
+        ])
+        ->assertRedirect(route('admin.konfigurasi.index'))
+        ->assertSessionHas('success', 'Lokasi dan radius kantor berhasil disimpan.');
 
-it('has no route that could change the location', function () {
-    $namaRoute = collect(app('router')->getRoutes()->getRoutes())
-        ->map(fn ($route) => $route->getName())
-        ->filter(fn (?string $nama) => $nama !== null && str_contains($nama, 'lokasi'));
-
-    expect($namaRoute)->toBeEmpty();
-});
-
-it('warns when the location config is incomplete', function () {
-    config()->set('presensi.radius', 0);
+    expect(Pengaturan::nilai('lokasi_latitude'))->toBe('-3.0123456')
+        ->and(Pengaturan::nilai('lokasi_longitude'))->toBe('104.7123456')
+        ->and(Pengaturan::nilai('lokasi_radius'))->toBe('2500');
 
     $this->actingAs(adminInfoLokasi())->get(route('admin.konfigurasi.index'))
         ->assertOk()
-        ->assertSee('Konfigurasi belum lengkap')
-        ->assertDontSee('Buka di peta');
+        ->assertSee('-3.0123456')
+        ->assertSee('104.7123456')
+        ->assertSee('2.500 m');
 });
 
-it('stays usable when the PRESENSI variables are missing from the environment', function () {
-    $kunci = ['PRESENSI_LAT', 'PRESENSI_LONG', 'PRESENSI_RADIUS'];
-    $cadangan = [];
+it('uses the saved location on the presensi page', function () {
+    Pengaturan::simpan('lokasi_latitude', '-3.1');
+    Pengaturan::simpan('lokasi_longitude', '104.7');
+    Pengaturan::simpan('lokasi_radius', '75');
 
-    foreach ($kunci as $nama) {
-        $cadangan[$nama] = env($nama);
-        putenv($nama);
-        unset($_ENV[$nama], $_SERVER[$nama]);
-    }
+    $user = User::factory()->create(['role' => 'pegawai']);
+    Pegawai::factory()->create(['user_id' => $user->id]);
 
-    try {
-        $presensi = require base_path('config/presensi.php');
+    $this->actingAs($user)->get(route('presensi.index'))
+        ->assertOk()
+        ->assertSee('data-kantor-latitude="-3.1"', false)
+        ->assertSee('data-kantor-longitude="104.7"', false)
+        ->assertSee('data-kantor-radius="75"', false);
+});
 
-        expect($presensi['latitude'])->toBeNumeric()
-            ->and((float) $presensi['latitude'])->toBeBetween(-90.0, 90.0)
-            ->and($presensi['longitude'])->toBeNumeric()
-            ->and((float) $presensi['longitude'])->toBeBetween(-180.0, 180.0)
-            ->and($presensi['radius'])->toBeInt()
-            ->and($presensi['radius'])->toBeGreaterThan(0);
-    } finally {
-        foreach ($cadangan as $nama => $nilai) {
-            if ($nilai === null) {
-                continue;
-            }
+it('rejects invalid office location input', function (array $data, string $field, string $message) {
+    $this->actingAs(adminInfoLokasi())
+        ->put(route('admin.konfigurasi.lokasi.update'), $data)
+        ->assertSessionHasErrors([$field => $message]);
 
-            putenv("{$nama}={$nilai}");
-            $_ENV[$nama] = $nilai;
-            $_SERVER[$nama] = $nilai;
-        }
-    }
+    expect(Pengaturan::query()->count())->toBe(0);
+})->with([
+    'lintang di luar rentang' => [
+        ['latitude' => '-91', 'longitude' => '104.7', 'radius' => 2500],
+        'latitude',
+        'Lintang kantor harus berada di antara -90 dan 90.',
+    ],
+    'bujur di luar rentang' => [
+        ['latitude' => '-3.0', 'longitude' => '181', 'radius' => 2500],
+        'longitude',
+        'Bujur kantor harus berada di antara -180 dan 180.',
+    ],
+    'radius nol' => [
+        ['latitude' => '-3.0', 'longitude' => '104.7', 'radius' => 0],
+        'radius',
+        'Radius absen minimal 1 meter.',
+    ],
+    'radius bukan angka bulat' => [
+        ['latitude' => '-3.0', 'longitude' => '104.7', 'radius' => '12.5'],
+        'radius',
+        'Radius absen harus berupa angka bulat.',
+    ],
+]);
+
+it('forbids guests and pegawai from changing the office location', function () {
+    $this->put(route('admin.konfigurasi.lokasi.update'), [
+        'latitude' => '-3.0',
+        'longitude' => '104.7',
+        'radius' => 2500,
+    ])->assertRedirect(route('login'));
+
+    $pegawai = User::factory()->create(['role' => 'pegawai']);
+
+    $this->actingAs($pegawai)->put(route('admin.konfigurasi.lokasi.update'), [
+        'latitude' => '-3.0',
+        'longitude' => '104.7',
+        'radius' => 2500,
+    ])->assertRedirect('/dashboard');
+
+    expect(Pengaturan::query()->count())->toBe(0);
 });

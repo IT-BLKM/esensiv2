@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Laporan\KeteranganPresensiAction;
+use App\Actions\Laporan\LaporanBulananAction;
 use App\Actions\Laporan\LaporanSemuaPegawaiAction;
 use App\Actions\Laporan\TulisExcelLaporanAction;
 use App\Models\JamKerja;
@@ -176,7 +178,45 @@ it('marks late cells and adds a TL column in the all-pegawai Excel matrix', func
     $dataRow = collect($rows)->first(fn (array $row): bool => in_array($pegawai->nama, $row, true));
 
     expect($header)->toContain('TL')
+        ->and($header)->toContain('PSW')
         ->and($dataRow)->toContain('H!')
+        ->and($dataRow)->toContain(1);
+});
+
+it('adds a PSW column to the all-pegawai Excel matrix', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftExportLaporan();
+    $pegawai = pegawaiExportLaporan();
+
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'tgl_presensi' => '2026-11-02',
+        'jam_masuk' => '07:30:00',
+        'jam_keluar' => '15:30:00',
+        'status' => 'hadir',
+    ]);
+
+    $data = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
+    $path = app(TulisExcelLaporanAction::class)->semua($data);
+
+    $reader = new Reader;
+    $reader->open($path);
+    $rows = [];
+
+    foreach ($reader->getSheetIterator() as $sheet) {
+        foreach ($sheet->getRowIterator() as $row) {
+            $rows[] = array_map(fn ($cell) => $cell->getValue(), $row->cells);
+        }
+    }
+
+    $reader->close();
+    unlink($path);
+
+    $header = collect($rows)->first(fn (array $row): bool => in_array('NIP', $row, true));
+    $dataRow = collect($rows)->first(fn (array $row): bool => in_array($pegawai->nama, $row, true));
+
+    expect($header)->toContain('PSW')
         ->and($dataRow)->toContain(1);
 });
 
@@ -196,6 +236,96 @@ it('renders late markers and TL in the all-pegawai PDF view', function () {
     ])->render();
 
     expect($html)->toContain('TL')
+        ->and($html)->toContain('PSW')
         ->and($html)->toContain('H!')
-        ->and($html)->toContain('hadir terlambat');
+        ->and($html)->toContain('hadir terlambat')
+        ->and($html)->toContain('pulang sebelum waktu');
+});
+
+it('renders the all-pegawai PDF with the A4 landscape report layout', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftExportLaporan();
+    $pegawai = pegawaiExportLaporan();
+    presensiExportLaporan($pegawai, $shift, '2026-11-02');
+
+    $data = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
+
+    $html = view('admin.laporan-pdf-semua', [
+        'data' => $data,
+        'logo' => null,
+        'namaKantor' => 'Kantor Uji',
+        'alamatKantor' => 'Alamat Uji',
+    ])->render();
+
+    expect($html)->toContain('Laporan Presensi Pegawai Periode November 2026')
+        ->and($html)->toContain('Bulan November 2026')
+        ->and($html)->toContain('Ka. Subbag Administrasi Umum')
+        ->and($html)->toContain('@page { size: A4 landscape;');
+});
+
+it('keeps a replaced lateness visible in the per-pegawai PDF', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftExportLaporan();
+    $pegawai = pegawaiExportLaporan();
+
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'tgl_presensi' => '2026-11-02',
+        'jam_masuk' => '07:50:00',
+        'jam_keluar' => '16:20:00',
+        'status' => 'hadir',
+    ]);
+
+    $data = app(LaporanBulananAction::class)($admin, $pegawai, 11, 2026);
+    $html = view('admin.laporan-pdf-pegawai', [
+        'data' => $data,
+        'pegawai' => $pegawai,
+        'baris' => array_map(fn (array $item): array => [
+            ...$item,
+            'fotoMasuk' => null,
+            'fotoKeluar' => null,
+            'keterangan' => app(KeteranganPresensiAction::class)($item),
+        ], $data['baris']),
+        'logo' => null,
+        'namaKantor' => 'Kantor Uji',
+        'alamatKantor' => 'Alamat Uji',
+    ])->render();
+
+    expect($html)->toContain('Terlambat 20 menit (diganti)');
+});
+
+it('renders pulang cepat and the report footer in the per-pegawai PDF', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftExportLaporan();
+    $pegawai = pegawaiExportLaporan();
+
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'tgl_presensi' => '2026-11-02',
+        'jam_masuk' => '07:30:00',
+        'jam_keluar' => '15:30:00',
+        'status' => 'hadir',
+    ]);
+
+    $data = app(LaporanBulananAction::class)($admin, $pegawai, 11, 2026);
+    $html = view('admin.laporan-pdf-pegawai', [
+        'data' => $data,
+        'pegawai' => $pegawai,
+        'baris' => array_map(fn (array $item): array => [
+            ...$item,
+            'fotoMasuk' => null,
+            'fotoKeluar' => null,
+            'keterangan' => app(KeteranganPresensiAction::class)($item),
+        ], $data['baris']),
+        'logo' => null,
+        'namaKantor' => 'Kantor Uji',
+        'alamatKantor' => 'Alamat Uji',
+    ])->render();
+
+    expect($html)->toContain('Laporan Presensi Pegawai Periode November 2026')
+        ->and($html)->toContain('Pulang cepat 30 menit')
+        ->and($html)->toContain('Checked by Administrator')
+        ->and($html)->toContain('@page { size: A4 portrait;');
 });
