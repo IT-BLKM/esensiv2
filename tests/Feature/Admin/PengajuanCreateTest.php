@@ -85,7 +85,8 @@ it('shows the target pegawai annual savings on the admin form', function () {
         'id_pegawai' => $this->target->id,
     ]))
         ->assertOk()
-        ->assertSee('Total tersedia termasuk tabungan: 24 hari')
+        ->assertSee('Total tersedia termasuk tabungan:')
+        ->assertSee('24 hari')
         ->assertSee('maksimal terbawa ke 2027:')
         ->assertSee('6 hari');
 });

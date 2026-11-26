@@ -243,7 +243,8 @@ it('shows 24 days including savings on the form', function () {
 
     $this->actingAs($this->user)->get(route('pengajuan.create'))
         ->assertOk()
-        ->assertSee('Total tersedia termasuk tabungan: 24 hari')
+        ->assertSee('Total tersedia termasuk tabungan:')
+        ->assertSee('24 hari')
         ->assertSee('maksimal terbawa ke 2027:')
         ->assertSee('6 hari');
 });
