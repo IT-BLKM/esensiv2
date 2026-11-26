@@ -18,7 +18,7 @@ main  ──── branch "utama", SELALU dalam keadaan bisa dijalankan. TIDAK B
 ```
 
 - **Repository** = proyek. **Branch** = salinan kerja kamu. **Pull Request (PR)** = permintaan "tolong tarik kerjaan saya ke `main`".
-- Setiap PR otomatis diuji **CI (Pint + Pest)**. Kalau merah, PR belum boleh di-merge.
+- Setiap PR otomatis diuji **CI (Pint + PHPStan + Pest)**. Kalau merah, PR belum boleh di-merge.
 - Aturan emas: **`main` hanya berubah lewat PR yang sudah lulus CI.**
 
 ---
@@ -30,7 +30,7 @@ main  ──── branch "utama", SELALU dalam keadaan bisa dijalankan. TIDAK B
 git clone https://github.com/ORG-NAMA-REPO.git
 cd NAMA-REPO
 
-# 2. Pasang dependency (Pint, Pest, dll — sudah terkunci di composer.lock)
+# 2. Pasang dependency (Pint, PHPStan, Pest, dll — sudah terkunci di composer.lock)
 composer install
 
 # 3. Siapkan file environment (JANGAN pernah di-commit)
@@ -177,7 +177,7 @@ gh pr create \
 
 1. Buka PR → tab **Files changed** → reviewer beri komentar (`+` pada baris kode).
 2. Penulis menjawab komentar / mengubah kode.
-3. **Cek tab Checks** — harus hijau semua (**Pint** dan **Pest**).
+3. **Cek tab Checks** — harus hijau semua (**Pint**, **PHPStan**, dan **Pest**).
 4. Merge. **Pilih salah satu, jangan campur:**
 
 | Tombol | Kapan dipakai |
@@ -225,6 +225,7 @@ Buka tab **Checks** pada PR → klik job yang gagal → baca log bagian akhir.
 | Pesan error | Yang dilakukan |
 |---|---|
 | Pint: `code style error` | lokal: `vendor/bin/pint` lalu `git add -A && git commit --amend` / commit baru, `git push` |
+| PHPStan: error analisis statis | lokal: `vendor/bin/phpstan analyse --no-progress --memory-limit=1G`; perbaiki kode atau perbarui baseline dengan alasan jelas |
 | `SQLSTATE[HY000] Connection refused` | langkah setup DB test belum lengkap (lihat bagian setup) |
 | `MissingAppKeyException` | `.env` belum ada / belum `key:generate` |
 | Test gagal tertentu | jalankan lokal `vendor/bin/pest --filter=NamaTest` untuk detail |
@@ -282,7 +283,7 @@ git commit -m "feat: penjelasan singkat"
 git push -u origin feat/15-seed-cuti
 
 # ---- Selesai ----
-vendor/bin/pint && vendor/bin/pest                   # wajib hijau sebelum PR
+vendor/bin/pint && vendor/bin/phpstan analyse --no-progress --memory-limit=1G && vendor/bin/pest  # wajib hijau sebelum PR
 gh pr create --fill --base main                      # buka PR
 gh pr checks                                         # pantau CI
 gh pr merge 42 --squash --delete-branch              # merge + bersihkan

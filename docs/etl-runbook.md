@@ -36,7 +36,7 @@
 | `konfigurasi_jamkerja` | `konfigurasi_jam_kerja` | 1.256 | **677** (lihat §3) |
 | `pengajuan_cuti` | `pengajuan` | 1.987 | **1.987** (tanpa buang) |
 | `presensi` (12 bln) | `presensi` | 10.662 | **10.602** (lihat §3) |
-| `konfigurasi_lokasi` | `.env` → `config/presensi.php` | 1 | 3 variabel |
+| `konfigurasi_lokasi` | tabel `pengaturan` → fallback `.env` / `config/presensi.php` | 1 | 3 variabel |
 | — | `saldo_cuti` (init) | — | **173 baris** (lihat §5) |
 | — | `saldo_cuti` (init) | — | **±175 baris** (Y=2026; lihat §5) |
 
@@ -194,7 +194,8 @@ Satu artisan command, mis. **`presensi:import-lama {--path=} {--since=} {--dry-r
 - [ ] Angka baris sesuai target §4.
 - [ ] Spot-check 3 pegawai: buka halaman histori presensi & "sisa cuti" — cocokkan dengan hitungan manual dari pengajuan lama.
 - [ ] Uji satu pengajuan **baru** end-to-end (submit → approve → baris presensi terbentuk → sisa berkurang).
-- [ ] `.env` berisi `PRESENSI_LAT/LONG/RADIUS` (dari `konfigurasi_lokasi`: `-2.91380858459444`, `104.69505610526285`, `25000` — lihat keputusan D).
+- [ ] Halaman TUKIN menampilkan rekap dari presensi hasil impor; aturan TL/PSW di menu **Aturan TUKIN** sudah sesuai.
+- [ ] Lokasi kantor diisi lewat menu **Konfigurasi** atau `.env` (`PRESENSI_LAT/LONG/RADIUS`), mengacu pada data lama `konfigurasi_lokasi` (`-2.91380858459444`, `104.69505610526285`, `25000`). Nilai di tabel `pengaturan` menang atas `.env`.
 
 ## 9. Rollback
 
@@ -207,3 +208,5 @@ Satu artisan command, mis. **`presensi:import-lama {--path=} {--since=} {--dry-r
 1. Dump lama **tetap di luar repo & di server lama** — jangan dipindah.
 2. Server lama dimatikan / diarsipkan setelah UAT (issue #52).
 3. Tambahkan issue lanjutan bila keputusan A/B memilih memindahkan file foto/lampiran.
+4. Setelah data presensi terimpor, periksa **Aturan TUKIN**, isi **Nominal TUKIN**
+   bila perlu, lalu cocokkan rekap TUKIN sebelum periode payroll dikunci.
