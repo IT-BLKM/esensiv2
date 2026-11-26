@@ -66,10 +66,25 @@ mysqldump --single-transaction --routines --triggers \
 - [ ] Uji restore backup di database terpisah
 - [ ] `php artisan migrate --force`
 - [ ] `php artisan db:seed --class=MasterDataSeeder --force` bila master belum ada
+      (sekaligus mengisi aturan default TL/PSW di `tunjangan_tingkat`)
+- [ ] `php artisan db:seed --class=HariLiburSeeder --force` bila hari libur belum ada
 - [ ] Jangan pernah menjalankan dump SQL lama dari sistem lama ke repo/server baru
 - [ ] Foto absen dan lampiran tetap di `storage/app/private`
 
-## 5. Rotasi password
+## 5. TUKIN
+
+- [ ] Aturan tingkat TL/PSW diperiksa di menu **Aturan TUKIN** (TL1–TL3, PSW1–PSW4)
+      dan sesuai kebijakan kantor.
+- [ ] Nominal TUKIN per jabatan diisi di menu **Nominal TUKIN** bila payroll memakai
+      rupiah. Bila dikosongkan, laporan hanya menampilkan persentase.
+- [ ] Rekap TUKIN bulan berjalan dicocokkan dengan data presensi dan koreksi manual.
+- [ ] Periode payroll **dikunci** lewat halaman TUKIN setelah angka final disetujui.
+      Setelah terkunci, presensi/approval/pembatalan pada bulan itu ditolak.
+- [ ] Slip/berita acara PDF satu pegawai dan ekspor rekap PDF/Excel sudah dicoba.
+- [ ] Koreksi TUKIN hanya dilakukan lewat form koreksi beralasan; jangan mengubah
+      data langsung di database.
+
+## 6. Rotasi password
 
 - [ ] Password admin lama/dump lama tidak dipakai lagi
 - [ ] Akun pegawai hasil ETL memakai password awal yang sudah ditetapkan,
@@ -83,7 +98,7 @@ php artisan pegawai:set-password-default --force
 - [ ] Setelah semua pegawai mengganti password, pertimbangkan menonaktifkan
       atau mengganti nilai `PEGAWAI_DEFAULT_PASSWORD`
 
-## 6. Pemeriksaan akhir
+## 7. Pemeriksaan akhir
 
 ```bash
 php artisan test --compact

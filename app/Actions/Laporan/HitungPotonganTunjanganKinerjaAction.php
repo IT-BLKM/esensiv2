@@ -19,8 +19,8 @@ use Illuminate\Support\Collection;
  * sebelum waktu (PSW), mengikuti Lampiran I & II Permenkes RI No. 41/2022.
  *
  * Satu baris presensi menghasilkan paling banyak satu tingkat TL dan satu
- * tingkat PSW. Persentase dijumlahkan per periode; nominal rupiah belum
- * dihitung karena master tunjangan belum ada.
+ * tingkat PSW. Persentase dijumlahkan per periode; nominal rupiah dihitung
+ * terpisah oleh LengkapiTukinAction bila master nominal jabatan tersedia.
  *
  * Frasa "bila tidak mengganti waktu keterlambatan" dijalankan lewat
  * HitungPenggantianKeterlambatanAction: TL 0 bila pegawai memenuhi jendela

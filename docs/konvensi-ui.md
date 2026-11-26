@@ -104,7 +104,7 @@ Semua di `resources/views/components/`. Pakai komponen, jangan menyusun utility 
 | `x-alert` | `<x-alert variant="danger" title="Gagal">…</x-alert>` | Pesan sukses/info/peringatan/error |
 | `x-input` | `<x-input name="nip" invalid />` | `invalid` mengaktifkan gaya error |
 | `x-table` | lihat §5 | Bersama `x-table.th` / `x-table.td` |
-| `x-icon` | `<x-icon name="dashboard" />` | `dashboard` · `pegawai` · `departemen` · `jam` · `cuti` · `monitoring` · `presensi` · `histori` · `pengajuan` · `laporan` · `konfigurasi` · `user` · `menu` · `logout`; ukuran `sm` · `md` · `lg` |
+| `x-icon` | `<x-icon name="dashboard" />` | `dashboard` · `pegawai` · `departemen` · `jam` · `cuti` · `monitoring` · `presensi` · `histori` · `pengajuan` · `tukin` · `laporan` · `konfigurasi` · `user` · `menu` · `logout`; ukuran `sm` · `md` · `lg` |
 | `x-flash` | `<x-flash />` | Pesan sesi `success` · `warning` · `error` — dipakai kedua layout |
 | `x-layouts.admin` | `<x-layouts.admin title="Pegawai">…</x-layouts.admin>` | **Hanya** halaman admin (desktop-first) — lihat §4.1 |
 | `x-layouts.pegawai` | `<x-layouts.pegawai title="Presensi">…</x-layouts.pegawai>` | **Hanya** halaman pegawai (mobile-first, bottom nav) — lihat §4.1 |
@@ -124,7 +124,7 @@ Ada **dua** layout — dipilih sesuai peran, jangan dicampur dan jangan menulis 
 | Peran | Layout | Navigasi |
 |---|---|---|
 | **admin** | `<x-layouts.admin>` | sidebar di kiri (desktop-first) + header + footer |
-| **pegawai** | `<x-layouts.pegawai>` | **bottom navigation** lima menu (mobile-first) + header ringkas |
+| **pegawai** | `<x-layouts.pegawai>` | **bottom navigation** enam menu (mobile-first) + header ringkas |
 
 ```blade
 {{-- admin --}}
@@ -155,7 +155,7 @@ Keduanya memakai aturan yang sama:
 **Aturan khusus halaman pegawai** (mobile-first):
 
 - Konten dibungkus `max-w-3xl` dan diberi `pb-24` supaya tidak tertutup bottom nav yang `fixed`.
-- Bottom nav: **Dashboard · Presensi · Histori · Pengajuan · Profil** (issue #24).
+- Bottom nav: **Dashboard · Presensi · Histori · TUKIN · Pengajuan · Profil** (issue #24, TUKIN ditambahkan di #146).
   Indikator aktif memakai `bg-brand-600` (kontras ≥ 3:1 terhadap putih), teks aktif
   `text-brand-700` — jangan memakai latar `brand-50` di bawah teks kecil (kontras 4,24:1, gagal).
 - Halaman admin yang dibuka di layar kecil tetap memakai `x-layouts.admin`; tidak ada
