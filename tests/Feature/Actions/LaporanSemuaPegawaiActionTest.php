@@ -2,6 +2,7 @@
 
 use App\Actions\Laporan\HitungPotonganTunjanganKinerjaAction;
 use App\Actions\Laporan\LaporanSemuaPegawaiAction;
+use App\Models\HariLibur;
 use App\Models\JamKerja;
 use App\Models\Pegawai;
 use App\Models\Presensi;
@@ -57,7 +58,7 @@ it('builds the H/DL/C/S/A matrix for every pegawai', function () {
 
     expect($hasil['hari'])->toBe(range(1, 30))
         ->and($barisA['sel'][1])->toBeNull()   // Minggu
-        ->and($barisA['sel'][2])->toBe('H!')
+        ->and($barisA['sel'][2])->toBe('TL1')
         ->and($barisA['sel'][3])->toBe('C')
         ->and($barisA['sel'][4])->toBe('DL')
         ->and($barisA['sel'][5])->toBe('S')
@@ -92,8 +93,31 @@ it('counts pulang sebelum waktu in the PSW column', function () {
     $hasil = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
     $baris = collect($hasil['baris'])->firstWhere('id', $pegawai->id);
 
-    expect($baris['sel'][2])->toBe('H')
+    expect($baris['sel'][2])->toBe('PSW1')
+        ->and($baris['h'])->toBe(1)
         ->and($baris['tl'])->toBe(0)
+        ->and($baris['psw'])->toBe(1);
+});
+
+it('combines TL and PSW levels in one day cell', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftMatriksLaporan();
+    $pegawai = Pegawai::factory()->create(['nip' => '199302032022032001', 'nama' => 'Budi Santoso']);
+
+    Presensi::factory()->create([
+        'id_pegawai' => $pegawai->id,
+        'id_jam_kerja' => $shift->id,
+        'tgl_presensi' => '2026-11-02',
+        'jam_masuk' => '07:45:00',
+        'jam_keluar' => '15:30:00',
+        'status' => 'hadir',
+    ]);
+
+    $hasil = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
+    $baris = collect($hasil['baris'])->firstWhere('id', $pegawai->id);
+
+    expect($baris['sel'][2])->toBe("TL1\nPSW1")
+        ->and($baris['tl'])->toBe(1)
         ->and($baris['psw'])->toBe(1);
 });
 
@@ -121,6 +145,23 @@ it('keeps replaced lateness as TL in the matrix while tukin removes its deductio
         ->and($baris['tl'])->toBe(1)
         ->and($tukin['ringkasan']['jumlahPenggantian'])->toBe(1)
         ->and($tukin['ringkasan']['totalPersenTl'])->toBe(0.0);
+});
+
+it('does not mark a national holiday as alpa', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $pegawai = Pegawai::factory()->create(['nip' => '199302032022032001', 'nama' => 'Budi Santoso']);
+
+    HariLibur::factory()->create([
+        'tanggal' => '2026-11-25',
+        'nama' => 'Hari libur uji',
+    ]);
+
+    $hasil = app(LaporanSemuaPegawaiAction::class)($admin, 11, 2026);
+    $baris = collect($hasil['baris'])->firstWhere('id', $pegawai->id);
+
+    expect($baris['sel'][25])->toBeNull()
+        ->and($baris['a'])->toBe(20)
+        ->and($hasil['hariLibur'])->toContain(25);
 });
 
 it('refuses matrix access for a user without laporan permission', function () {

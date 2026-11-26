@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
 use App\Models\Cuti;
+use App\Models\HariLibur;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -331,58 +332,60 @@ class AktivitasSeeder extends Seeder
         $rina = $pegawai['pegawai4@esensi.test'];
         $joko = $pegawai['pegawai5@esensi.test'];
 
-        $shiftHariIni = $this->shiftUntuk($sekarang, $jk01, $jk02, $jk03);
+        if (! HariLibur::padaTanggal($sekarang)) {
+            $shiftHariIni = $this->shiftUntuk($sekarang, $jk01, $jk02, $jk03);
 
-        // Jika seeder dijalankan sebelum jam masuk, biarkan akun utama belum
-        // absen agar halaman presensi bisa diuji dari awal.
-        if ($sekarang->format('H:i:s') >= $shiftHariIni->awal_masuk) {
-            $jamMasukBudi = $this->jamMasuk($sekarang, $shiftHariIni, 15);
-            $jamMasukBudi = min($jamMasukBudi, $sekarang->format('H:i:s'));
+            // Jika seeder dijalankan sebelum jam masuk, biarkan akun utama belum
+            // absen agar halaman presensi bisa diuji dari awal.
+            if ($sekarang->format('H:i:s') >= $shiftHariIni->awal_masuk) {
+                $jamMasukBudi = $this->jamMasuk($sekarang, $shiftHariIni, 15);
+                $jamMasukBudi = min($jamMasukBudi, $sekarang->format('H:i:s'));
 
-            $this->simpanPresensi($budi, $sekarang, $shiftHariIni, [
+                $this->simpanPresensi($budi, $sekarang, $shiftHariIni, [
+                    'status' => 'hadir',
+                    'jam_masuk' => $jamMasukBudi,
+                    'koordinat_masuk' => $koordinat,
+                    'foto_masuk' => $foto,
+                ], $hitung);
+            }
+
+            if ($sekarang->format('H:i:s') >= $shiftHariIni->awal_masuk) {
+                $jamMasukSiti = min(
+                    $this->jamMasuk($sekarang, $shiftHariIni),
+                    $sekarang->format('H:i:s'),
+                );
+                $jamKeluarSiti = $this->jamKeluar($sekarang, $shiftHariIni, 5);
+                $jamKeluarSiti = $jamKeluarSiti <= $sekarang->format('H:i:s') ? $jamKeluarSiti : null;
+
+                $this->simpanPresensi($siti, $sekarang, $shiftHariIni, [
+                    'status' => 'hadir',
+                    'jam_masuk' => $jamMasukSiti,
+                    'jam_keluar' => $jamKeluarSiti,
+                    'koordinat_masuk' => $koordinat,
+                    'koordinat_keluar' => $jamKeluarSiti === null ? null : $koordinat,
+                    'foto_masuk' => $foto,
+                    'foto_keluar' => $jamKeluarSiti === null ? null : $foto,
+                ], $hitung);
+            }
+
+            $this->simpanPresensi($ahmad, $sekarang, null, [
+                'status' => 'cuti',
+                'id_pengajuan' => $pengajuan['cuti_ahmad_hari_ini']->id,
+            ], $hitung);
+
+            $this->simpanPresensi($rina, $sekarang, null, [
+                'status' => 'sakit',
+                'id_pengajuan' => $pengajuan['sakit_rina_hari_ini']->id,
+            ], $hitung);
+
+            $this->simpanPresensi($joko, $sekarang, $shiftHariIni, [
                 'status' => 'hadir',
-                'jam_masuk' => $jamMasukBudi,
+                'id_pengajuan' => $pengajuan['dl_joko_hari_ini']->id,
+                'jam_masuk' => $this->jamMasuk($sekarang, $shiftHariIni, 0, '10:00:00'),
                 'koordinat_masuk' => $koordinat,
                 'foto_masuk' => $foto,
             ], $hitung);
         }
-
-        if ($sekarang->format('H:i:s') >= $shiftHariIni->awal_masuk) {
-            $jamMasukSiti = min(
-                $this->jamMasuk($sekarang, $shiftHariIni),
-                $sekarang->format('H:i:s'),
-            );
-            $jamKeluarSiti = $this->jamKeluar($sekarang, $shiftHariIni, 5);
-            $jamKeluarSiti = $jamKeluarSiti <= $sekarang->format('H:i:s') ? $jamKeluarSiti : null;
-
-            $this->simpanPresensi($siti, $sekarang, $shiftHariIni, [
-                'status' => 'hadir',
-                'jam_masuk' => $jamMasukSiti,
-                'jam_keluar' => $jamKeluarSiti,
-                'koordinat_masuk' => $koordinat,
-                'koordinat_keluar' => $jamKeluarSiti === null ? null : $koordinat,
-                'foto_masuk' => $foto,
-                'foto_keluar' => $jamKeluarSiti === null ? null : $foto,
-            ], $hitung);
-        }
-
-        $this->simpanPresensi($ahmad, $sekarang, null, [
-            'status' => 'cuti',
-            'id_pengajuan' => $pengajuan['cuti_ahmad_hari_ini']->id,
-        ], $hitung);
-
-        $this->simpanPresensi($rina, $sekarang, null, [
-            'status' => 'sakit',
-            'id_pengajuan' => $pengajuan['sakit_rina_hari_ini']->id,
-        ], $hitung);
-
-        $this->simpanPresensi($joko, $sekarang, $shiftHariIni, [
-            'status' => 'hadir',
-            'id_pengajuan' => $pengajuan['dl_joko_hari_ini']->id,
-            'jam_masuk' => $this->jamMasuk($sekarang, $shiftHariIni, 0, '10:00:00'),
-            'koordinat_masuk' => $koordinat,
-            'foto_masuk' => $foto,
-        ], $hitung);
 
         if (isset($bulanIni[0])) {
             $d1 = $bulanIni[0];
@@ -627,7 +630,7 @@ class AktivitasSeeder extends Seeder
         $tanggal = CarbonImmutable::parse($sebelum)->startOfDay()->subDay();
 
         while (count($hasil) < $jumlah) {
-            if (! $tanggal->isWeekend()) {
+            if (! $tanggal->isWeekend() && ! HariLibur::padaTanggal($tanggal)) {
                 $hasil[] = $tanggal;
             }
 

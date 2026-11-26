@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\HariLibur;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -145,6 +146,24 @@ it('uses the radius saved by the admin instead of the config fallback', function
         ->postJson(route('presensi.store'), payloadStorePresensi())
         ->assertStatus(422)
         ->assertJsonPath('type', 'radius');
+
+    expect(Presensi::query()->count())->toBe(0)
+        ->and(Storage::disk('local')->allFiles())->toBe([]);
+});
+
+it('rejects presensi on a national holiday', function () {
+    [$user, $pegawai] = akunStorePresensi();
+    jadwalkanStorePresensi($pegawai, shiftStorePresensi());
+
+    HariLibur::factory()->create([
+        'tanggal' => '2026-11-25',
+        'nama' => 'Hari libur uji',
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('presensi.store'), payloadStorePresensi())
+        ->assertStatus(422)
+        ->assertJsonPath('type', 'hari_libur');
 
     expect(Presensi::query()->count())->toBe(0)
         ->and(Storage::disk('local')->allFiles())->toBe([]);

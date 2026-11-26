@@ -34,6 +34,10 @@
                 $mode = 'selesai';
                 $labelStatus = 'Presensi selesai';
                 $variantStatus = 'success';
+            } elseif (($hariIni['hariLibur'] ?? false) && $status === null) {
+                $mode = 'libur-nasional';
+                $labelStatus = 'Hari libur';
+                $variantStatus = 'info';
             } elseif ($shift === null) {
                 $mode = 'tanpa-shift';
                 $labelStatus = 'Tidak ada shift';
@@ -77,6 +81,7 @@
                 'dl-setengah' => 'DL setengah hari: cukup absen sekali hari ini, tanpa absen pulang.',
                 'dl-setengah-selesai' => 'Absen DL setengah hari sudah tercatat; absen pulang tidak diperlukan.',
                 'tanpa-shift' => 'Tidak ada shift terjadwal hari ini.',
+                'libur-nasional' => 'Hari ini hari libur nasional, jadi absen tidak diperlukan.',
                 'libur' => 'Hari ini tercatat '.$labelStatus.'.',
                 'selesai' => 'Presensi hari ini sudah lengkap.',
                 default => 'Data presensi hari ini tidak lengkap.',
@@ -242,6 +247,11 @@
                         <x-alert variant="info">
                             Tidak ada shift terjadwal hari ini, jadi tombol absen dinonaktifkan.
                             Hubungi administrator bila jadwal ini keliru.
+                        </x-alert>
+                    @elseif ($mode === 'libur-nasional')
+                        <x-alert variant="info">
+                            Hari ini adalah <strong>hari libur nasional</strong>, jadi absen tidak diperlukan
+                            dan tombol absen dinonaktifkan.
                         </x-alert>
                     @elseif ($mode === 'libur')
                         <x-alert variant="info">

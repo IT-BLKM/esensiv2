@@ -4,7 +4,12 @@ namespace App\Actions\Laporan;
 
 use App\Models\Pegawai;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\File;
+use OpenSpout\Common\Entity\Cell;
+use OpenSpout\Common\Entity\Cell\ImageCell;
 use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\CellAlignment;
+use OpenSpout\Common\Entity\Style\CellVerticalAlignment;
 use OpenSpout\Common\Entity\Style\Color;
 use OpenSpout\Common\Entity\Style\Style;
 use OpenSpout\Writer\XLSX\Options;
@@ -16,9 +21,9 @@ use OpenSpout\Writer\XLSX\Writer;
 /**
  * Tulis laporan presensi ke XLSX memakai OpenSpout.
  *
- * Dua bentuk: laporan harian satu pegawai (A4 portrait) dan matriks semua
- * pegawai (A4 landscape). Page setup disamakan dengan lampiran QA supaya file
- * bisa langsung dicetak tanpa mengatur ulang orientasi/kertas.
+ * Dua bentuk: laporan harian satu pegawai dan matriks semua pegawai, keduanya
+ * A4 portrait. Page setup disamakan dengan lampiran QA supaya file bisa
+ * langsung dicetak tanpa mengatur ulang orientasi/kertas.
  */
 class TulisExcelLaporanAction
 {
@@ -35,11 +40,9 @@ class TulisExcelLaporanAction
             $judul = $this->gayaJudul();
             $header = $this->gayaHeader();
 
-            $writer->addRow(Row::fromValuesWithStyle([
-                'Laporan Presensi Pegawai Periode '.$data['labelPeriode'],
-            ], $judul));
-            $writer->addRow(Row::fromValues([config('presensi.nama_kantor')]));
-            $writer->addRow(Row::fromValues([config('presensi.alamat_kantor')]));
+            $writer->addRow($this->barisHeader('Laporan Presensi Pegawai Periode '.$data['labelPeriode'], $judul));
+            $writer->addRow($this->barisHeader((string) config('presensi.nama_kantor')));
+            $writer->addRow($this->barisHeader((string) config('presensi.alamat_kantor')));
             $writer->addRow(Row::fromValues([]));
             $writer->addRow(Row::fromValues(['NIP', ':', $pegawai->nip]));
             $writer->addRow(Row::fromValues(['Nama', ':', $pegawai->nama]));
@@ -62,16 +65,21 @@ class TulisExcelLaporanAction
                     Carbon::parse((string) $item['tanggal'])->format('d-m-Y'),
                     $item['jamMasuk'] ?? '-',
                     $item['jamKeluar'] ?? '-',
-                    $item['kodeStatus'],
+                    $item['kodeHari'],
                     ($this->keterangan)($item),
                     $item['jmlJam'],
                 ];
 
-                $writer->addRow(
-                    $item['menitTerlambat'] > 0 || $item['menitPulangCepat'] > 0
-                        ? Row::fromValuesWithStyle($nilai, $this->gayaTerlambat())
-                        : Row::fromValues($nilai),
-                );
+                $merah = $item['menitTerlambat'] > 0 || $item['menitPulangCepat'] > 0;
+                $styles = [];
+
+                foreach (array_keys($nilai) as $kolom) {
+                    $styles[$kolom] = $kolom === 4
+                        ? $this->gayaKodeHari($merah)
+                        : $this->gayaTeksKiri($merah);
+                }
+
+                $writer->addRow(Row::fromValuesWithStyles($nilai, $styles, 22));
             }
 
             $sheet = $writer->getCurrentSheet();
@@ -93,11 +101,9 @@ class TulisExcelLaporanAction
             $judul = $this->gayaJudul();
             $header = $this->gayaHeader();
 
-            $writer->addRow(Row::fromValuesWithStyle([
-                'Laporan Presensi Pegawai Periode '.$data['labelPeriode'],
-            ], $judul));
-            $writer->addRow(Row::fromValues([config('presensi.nama_kantor')]));
-            $writer->addRow(Row::fromValues([config('presensi.alamat_kantor')]));
+            $writer->addRow($this->barisHeader('Laporan Presensi Pegawai Periode '.$data['labelPeriode'], $judul));
+            $writer->addRow($this->barisHeader((string) config('presensi.nama_kantor')));
+            $writer->addRow($this->barisHeader((string) config('presensi.alamat_kantor')));
             $writer->addRow(Row::fromValues([]));
 
             $kolom = ['NIP', 'Nama Pegawai', ...array_map('strval', $data['hari']), 'H', 'DL', 'C', 'S', 'A', 'TL', 'PSW'];
@@ -118,11 +124,16 @@ class TulisExcelLaporanAction
                 $nilai[] = $item['tl'];
                 $nilai[] = $item['psw'];
 
-                $writer->addRow(
-                    $item['tl'] > 0 || $item['psw'] > 0
-                        ? Row::fromValuesWithStyle($nilai, $this->gayaTerlambat())
-                        : Row::fromValues($nilai),
-                );
+                $merah = $item['tl'] > 0 || $item['psw'] > 0;
+                $styles = [];
+
+                foreach (array_keys($nilai) as $kolom) {
+                    $styles[$kolom] = $kolom < 2
+                        ? $this->gayaTeksKiri($merah)
+                        : $this->gayaKodeHari($merah);
+                }
+
+                $writer->addRow(Row::fromValuesWithStyles($nilai, $styles, 22));
             }
 
             $writer->addRow(Row::fromValues([]));
@@ -136,7 +147,7 @@ class TulisExcelLaporanAction
             $sheet->setColumnWidth(28, 2);
             $sheet->setColumnWidthForRange(4, 3, 2 + $jumlahHari);
             $sheet->setColumnWidthForRange(5, 3 + $jumlahHari, 9 + $jumlahHari);
-        }, PageOrientation::LANDSCAPE);
+        }, PageOrientation::PORTRAIT);
     }
 
     /**
@@ -171,10 +182,49 @@ class TulisExcelLaporanAction
             ->withBackgroundColor(Color::rgb(219, 219, 219));
     }
 
-    private function gayaTerlambat(): Style
+    private function barisHeader(string $teks, ?Style $gaya = null): Row
     {
-        return (new Style)
-            ->withFontColor(Color::rgb(153, 27, 27))
-            ->withBackgroundColor(Color::rgb(254, 226, 226));
+        $logo = $this->logoHeader();
+        $cells = [$logo ?? Cell::fromValue(''), Cell::fromValue($teks, $gaya)];
+
+        return new Row($cells, 34);
+    }
+
+    private function logoHeader(): ?ImageCell
+    {
+        $path = public_path('images/logo-kemenkes.png');
+
+        if (! File::exists($path)) {
+            return null;
+        }
+
+        return new ImageCell($path, 40, 36);
+    }
+
+    private function gayaTeksKiri(bool $merah = false): Style
+    {
+        $style = (new Style)
+            ->withFontSize(8)
+            ->withCellAlignment(CellAlignment::LEFT)
+            ->withCellVerticalAlignment(CellVerticalAlignment::CENTER);
+
+        return $merah
+            ? $style->withFontColor(Color::rgb(153, 27, 27))
+            : $style;
+    }
+
+    private function gayaKodeHari(bool $merah = false): Style
+    {
+        $style = (new Style)
+            ->withFontSize(6)
+            ->withShouldWrapText(true)
+            ->withCellAlignment(CellAlignment::CENTER)
+            ->withCellVerticalAlignment(CellVerticalAlignment::CENTER);
+
+        return $merah
+            ? $style
+                ->withFontColor(Color::rgb(153, 27, 27))
+                ->withBackgroundColor(Color::rgb(254, 226, 226))
+            : $style;
     }
 }

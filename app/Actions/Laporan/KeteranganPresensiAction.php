@@ -20,14 +20,20 @@ class KeteranganPresensiAction
         }
 
         $bagian = [];
+        $klasifikasi = $item['klasifikasi'] ?? null;
+        $klasifikasi = is_array($klasifikasi) ? $klasifikasi : [];
         $menitTerlambat = (int) ($item['menitTerlambat'] ?? 0);
 
         if ($menitTerlambat > 0) {
             $teks = "Terlambat {$menitTerlambat} menit";
             $penggantian = $item['penggantian'] ?? null;
+            $levelTl = $klasifikasi['levelTl'] ?? null;
 
-            if (is_array($penggantian) && ($penggantian['terpenuhi'] ?? false) === true) {
+            if (($klasifikasi['terlambatDiganti'] ?? false) === true
+                || (is_array($penggantian) && ($penggantian['terpenuhi'] ?? false) === true)) {
                 $teks .= ' (diganti)';
+            } elseif (is_string($levelTl)) {
+                $teks .= " ({$levelTl})";
             } elseif (is_array($penggantian) && ($penggantian['bisaDiganti'] ?? true) === false) {
                 $teks .= ' (tidak bisa diganti)';
             }
@@ -38,7 +44,9 @@ class KeteranganPresensiAction
         $menitPulangCepat = (int) ($item['menitPulangCepat'] ?? 0);
 
         if ($menitPulangCepat > 0) {
-            $bagian[] = "Pulang cepat {$menitPulangCepat} menit";
+            $levelPsw = $klasifikasi['levelPsw'] ?? null;
+            $bagian[] = "Pulang cepat {$menitPulangCepat} menit"
+                .(is_string($levelPsw) ? " ({$levelPsw})" : '');
         }
 
         return $bagian === [] ? 'Tepat Waktu' : implode('; ', $bagian);

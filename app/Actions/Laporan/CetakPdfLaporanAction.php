@@ -56,7 +56,7 @@ class CetakPdfLaporanAction
             'logo' => $this->logo(),
             'namaKantor' => (string) config('presensi.nama_kantor'),
             'alamatKantor' => (string) config('presensi.alamat_kantor'),
-        ], 'landscape');
+        ], 'portrait');
     }
 
     /**
@@ -83,7 +83,11 @@ class CetakPdfLaporanAction
 
     private function logo(): ?string
     {
-        $path = public_path('images/logo-esensi-transparan.png');
+        $path = public_path('images/logo-kemenkes.png');
+
+        if (! File::exists($path)) {
+            $path = public_path('images/logo-esensi-transparan.png');
+        }
 
         if (! File::exists($path)) {
             return null;

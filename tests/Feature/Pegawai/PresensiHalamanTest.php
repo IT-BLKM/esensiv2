@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\HariLibur;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -121,6 +122,26 @@ it('switches the action to pulang after the pegawai checked in', function () {
         ->assertSee('Absen Pulang')
         ->assertSee('07:45')
         ->assertSee('Jam masuk');
+
+    expect(tombolAbsenNonaktif($response->getContent()))->toBeTrue();
+});
+
+it('shows a holiday state and disables absen on a national holiday', function () {
+    [$user, $pegawai] = akunHalamanPresensi();
+    jadwalkanHalamanPresensi($pegawai, shiftHalamanPresensi());
+
+    HariLibur::factory()->create([
+        'tanggal' => '2026-11-25',
+        'nama' => 'Hari libur uji',
+    ]);
+
+    $response = $this->actingAs($user)->get(route('presensi.index'));
+
+    $response->assertOk()
+        ->assertSee('data-mode="libur-nasional"', false)
+        ->assertSee('data-bisa-absen="0"', false)
+        ->assertSee('hari libur nasional')
+        ->assertSee('Absen tidak tersedia');
 
     expect(tombolAbsenNonaktif($response->getContent()))->toBeTrue();
 });

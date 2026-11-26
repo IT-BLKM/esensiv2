@@ -38,6 +38,8 @@ it('renders the main admin pages from seeded data', function () {
         'admin.rekap.index',
         'admin.pengajuan.index',
         'admin.pegawai.index',
+        'admin.hari-libur.index',
+        'admin.saldo-cuti.index',
     ] as $route) {
         $this->actingAs($admin)->get(route($route))->assertOk();
     }

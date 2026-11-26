@@ -24,6 +24,11 @@ final class PresensiException extends RuntimeException
         return new self('jadwal', 'Tidak ada shift terjadwal hari ini, jadi presensi tidak bisa dicatat.');
     }
 
+    public static function hariLibur(): self
+    {
+        return new self('hari_libur', 'Hari ini adalah hari libur, jadi presensi tidak perlu dan tidak bisa dicatat.');
+    }
+
     public static function radius(float $jarak, int $radius): self
     {
         return new self('radius', sprintf(

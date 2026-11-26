@@ -2,6 +2,7 @@
 
 namespace App\Actions\Pengajuan;
 
+use App\Models\HariLibur;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
 use Carbon\CarbonImmutable;
@@ -32,9 +33,14 @@ class DaftarHariKerjaAction
             ->get(['hari', 'id_jam_kerja'])
             ->keyBy('hari');
 
+        $hariLibur = array_fill_keys(HariLibur::dalamRentang($mulai, $selesai), true);
         $hasil = [];
 
         for ($tanggal = $mulai->startOfDay(); $tanggal->lte($selesai); $tanggal = $tanggal->addDay()) {
+            if (isset($hariLibur[$tanggal->toDateString()])) {
+                continue;
+            }
+
             // Carbon: 0 = Minggu. KonfigurasiJamKerja::HARI: 0 = Senin.
             $namaHari = KonfigurasiJamKerja::HARI[($tanggal->dayOfWeek + 6) % 7];
 

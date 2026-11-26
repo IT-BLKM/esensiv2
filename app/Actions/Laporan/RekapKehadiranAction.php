@@ -4,6 +4,7 @@ namespace App\Actions\Laporan;
 
 use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
+use App\Models\HariLibur;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -64,6 +65,7 @@ class RekapKehadiranAction
      *         jamKeluar: string|null,
      *         menitTerlambat: int,
      *         terlambat: bool,
+     *         hariLibur: bool,
      *         penggantian: array<string, mixed>|null
      *     },
      *     bulanIni: array{
@@ -134,6 +136,7 @@ class RekapKehadiranAction
      *     jamKeluar: string|null,
      *     menitTerlambat: int,
      *     terlambat: bool,
+     *     hariLibur: bool,
      *     penggantian: array<string, mixed>|null
      * }
      */
@@ -426,6 +429,10 @@ class RekapKehadiranAction
      */
     private function shiftHariIni(Pegawai $pegawai, CarbonInterface $sekarang): ?JamKerja
     {
+        if (HariLibur::padaTanggal($sekarang)) {
+            return null;
+        }
+
         $namaHari = KonfigurasiJamKerja::HARI[$sekarang->dayOfWeekIso - 1];
 
         return KonfigurasiJamKerja::query()
@@ -458,6 +465,7 @@ class RekapKehadiranAction
      *     jamKeluar: string|null,
      *     menitTerlambat: int,
      *     terlambat: bool,
+     *     hariLibur: bool,
      *     penggantian: array<string, mixed>|null
      * }
      */
@@ -489,6 +497,7 @@ class RekapKehadiranAction
             'jamKeluar' => $this->formatJam($presensi?->jam_keluar),
             'menitTerlambat' => $menitTerlambat,
             'terlambat' => $menitTerlambat > 0,
+            'hariLibur' => HariLibur::padaTanggal($sekarang),
             'penggantian' => $presensi === null ? null : ($this->hitungPenggantian)($presensi),
         ];
     }

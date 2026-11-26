@@ -26,6 +26,11 @@ class CutiPolicy
         return $user->role === 'admin';
     }
 
+    public function updateSaldo(User $user): bool
+    {
+        return $user->role === 'admin';
+    }
+
     public function delete(User $user, Cuti $cuti): bool
     {
         return $user->role === 'admin';

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CutiController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DepartemenController;
+use App\Http\Controllers\Admin\HariLiburController;
 use App\Http\Controllers\Admin\JamKerjaController;
 use App\Http\Controllers\Admin\KonfigurasiJamKerjaController;
 use App\Http\Controllers\Admin\LaporanController as LaporanAdminController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Admin\PegawaiController;
 use App\Http\Controllers\Admin\PegawaiPasswordController;
 use App\Http\Controllers\Admin\PengajuanController as PengajuanAdminController;
 use App\Http\Controllers\Admin\RekapKeterlambatanController;
+use App\Http\Controllers\Admin\SaldoCutiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\Pegawai\DashboardController;
@@ -132,6 +134,12 @@ Route::middleware('auth')->group(function () {
         Route::resource('cuti', CutiController::class)
             ->parameters(['cuti' => 'cuti'])
             ->except('show');
+        Route::resource('hari-libur', HariLiburController::class)
+            ->parameters(['hari-libur' => 'hariLibur'])
+            ->except('show');
+        Route::get('/saldo-cuti', [SaldoCutiController::class, 'index'])->name('saldo-cuti.index');
+        Route::get('/saldo-cuti/{pegawai}/edit', [SaldoCutiController::class, 'edit'])->name('saldo-cuti.edit');
+        Route::put('/saldo-cuti/{pegawai}', [SaldoCutiController::class, 'update'])->name('saldo-cuti.update');
         Route::get('/monitoring', MonitoringController::class)->name('monitoring.index');
 
         /*

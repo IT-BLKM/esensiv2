@@ -81,7 +81,7 @@
                             -
                         @endif
                     </td>
-                    <td class="center">{{ $item['kodeStatus'] }}</td>
+                    <td class="center">{!! nl2br(e($item['kodeHari'])) !!}</td>
                     <td>{{ $item['keterangan'] }}</td>
                     <td class="center">{{ $item['jmlJam'] }}</td>
                 </tr>
