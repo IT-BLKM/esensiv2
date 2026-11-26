@@ -135,6 +135,14 @@ UNIQUE(id_pegawai, hari)                            -- satu shift per hari per p
 created_at       datetime
 updated_at       datetime
 
+hari_libur
+-----
+id               primary key
+tanggal          date UNIQUE
+nama             varchar(255)
+created_at       datetime
+updated_at       datetime
+
 konfigurasi_lokasi → config/presensi.php ← .env
   PRESENSI_LAT, PRESENSI_LONG, PRESENSI_RADIUS
 ```
@@ -147,7 +155,7 @@ konfigurasi_lokasi → config/presensi.php ← .env
 
 ## Aturan bisnis yang menempel di skema
 
-1. **Hari kerja** = hari dalam rentang yang punya shift di `konfigurasi_jam_kerja` untuk pegawai itu (default bila tidak ada konfigurasi: Senin–Jumat). Dipakai untuk: hitung hari pengajuan (cuti Jum–Min = 1 hari) dan menentukan baris presensi mana yang dibuat saat approve. *Hari libur nasional: belum ada tabelnya (issue lanjutan).*
+1. **Hari kerja** = hari dalam rentang yang punya shift di `konfigurasi_jam_kerja` untuk pegawai itu (default bila tidak ada konfigurasi: Senin–Jumat) **dan bukan hari libur** di tabel `hari_libur`. Dipakai untuk: hitung hari pengajuan (cuti Jum–Min = 1 hari), menentukan baris presensi yang dibuat saat approve, dan menandai alpa di laporan.
 2. **Tanpa shift di hari itu** → presensi ditolak dengan pesan ramah (tombol disabled di halaman + JSON error terstruktur di server), bukan error 500.
 3. **Submit & approve pengajuan** mengecek tabrakan dua kali: ada presensi `hadir` di rentang ATAU pengajuan approved lain tumpang tindih → **tolak utuh** dengan pesan menyebut tanggalnya.
 4. **Approve (satu transaksi):** update `status` + `disetujui_oleh/disetujui_pada` + insert baris presensi **hanya untuk hari kerja** (`status = pengajuan.jenis`, `id_pengajuan` terisi). **`saldo_cuti` TIDAK diubah saat approve** — konsumsi dihitung dari baris presensi + saldo.

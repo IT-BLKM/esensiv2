@@ -4,6 +4,7 @@ namespace App\Actions\Presensi;
 
 use App\Actions\Pengajuan\CariPengajuanDlHariIniAction;
 use App\Actions\Pengaturan\AmbilLokasiKantorAction;
+use App\Models\HariLibur;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -221,6 +222,10 @@ class StorePresensiAction
 
     private function shiftHariIni(Pegawai $pegawai, CarbonInterface $sekarang): JamKerja
     {
+        if (HariLibur::padaTanggal($sekarang)) {
+            throw PresensiException::hariLibur();
+        }
+
         $namaHari = KonfigurasiJamKerja::HARI[$sekarang->dayOfWeekIso - 1];
 
         $shift = KonfigurasiJamKerja::query()

@@ -26,6 +26,7 @@ class StorePengajuanAdminRequest extends StorePengajuanRequest
     {
         return array_merge(parent::rules(), [
             'id_pegawai' => ['required', 'integer', 'exists:pegawai,id'],
+            'langsung_setujui' => ['nullable', 'boolean'],
         ]);
     }
 
@@ -38,6 +39,7 @@ class StorePengajuanAdminRequest extends StorePengajuanRequest
             'id_pegawai.required' => 'Pegawai wajib dipilih.',
             'id_pegawai.integer' => 'Pegawai tidak valid.',
             'id_pegawai.exists' => 'Pegawai tidak ditemukan.',
+            'langsung_setujui.boolean' => 'Pilihan setujui langsung tidak valid.',
         ]);
     }
 

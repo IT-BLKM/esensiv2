@@ -2,6 +2,7 @@
 
 use App\Actions\Pengajuan\ApprovePengajuanAction;
 use App\Models\Cuti;
+use App\Models\HariLibur;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -131,6 +132,31 @@ it('approves within one transaction and creates presensi only for working days',
         ->and($presensi->pluck('tgl_presensi')->all())->toBe(['2026-11-20', '2026-11-23'])
         ->and($presensi->pluck('status')->unique()->all())->toBe(['cuti'])
         ->and($presensi->pluck('id_jam_kerja')->unique()->all())->toBe([$shift->id]);
+});
+
+it('does not create presensi on a national holiday', function () {
+    $admin = adminPengajuanApproval();
+    [, $pegawai] = akunPengajuanApproval();
+    $cuti = cutiPengajuanApproval();
+
+    HariLibur::factory()->create([
+        'tanggal' => '2026-11-23',
+        'nama' => 'Hari libur uji',
+    ]);
+
+    $pengajuan = buatPengajuanApproval($pegawai, $cuti);
+
+    $this->actingAs($admin)
+        ->post(route('admin.pengajuan.approve', $pengajuan))
+        ->assertRedirect();
+
+    $presensi = Presensi::query()
+        ->where('id_pengajuan', $pengajuan->id)
+        ->orderBy('tgl_presensi')
+        ->get();
+
+    expect($presensi)->toHaveCount(1)
+        ->and($presensi->first()->tgl_presensi)->toBe('2026-11-20');
 });
 
 it('falls back to Monday-Friday when the pegawai has no shift configuration', function () {

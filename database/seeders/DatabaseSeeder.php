@@ -22,7 +22,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(MasterDataSeeder::class);
+        $this->call([
+            MasterDataSeeder::class,
+            HariLiburSeeder::class,
+        ]);
 
         // Jangan pernah membuat akun/demo password di produksi. Admin
         // produksi dibuat eksplisit lewat `php artisan admin:create`.

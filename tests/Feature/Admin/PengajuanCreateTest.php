@@ -64,6 +64,8 @@ it('renders the admin form with a pegawai selector and all pengajuan fields', fu
         ->assertSee('name="id_cuti"', false)
         ->assertSee('name="tanggal_mulai"', false)
         ->assertSee('name="lampiran"', false)
+        ->assertSee('name="langsung_setujui"', false)
+        ->assertSee('Setujui langsung')
         ->assertSee(route('admin.pengajuan.store'), false);
 });
 
@@ -106,6 +108,27 @@ it('creates a pending pengajuan for the selected pegawai without creating presen
         ->and($pengajuan->disetujui_oleh)->toBeNull()
         ->and($pengajuan->disetujui_pada)->toBeNull()
         ->and(Presensi::count())->toBe(0);
+});
+
+it('can create and approve a pengajuan immediately for historical input', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.pengajuan.store'), ($this->payload)([
+            'langsung_setujui' => '1',
+        ]))
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    $pengajuan = Pengajuan::query()->firstOrFail();
+    $presensi = Presensi::query()
+        ->where('id_pengajuan', $pengajuan->id)
+        ->orderBy('tgl_presensi')
+        ->get();
+
+    expect($pengajuan->status)->toBe('approved')
+        ->and($pengajuan->disetujui_oleh)->toBe($this->admin->id)
+        ->and($pengajuan->disetujui_pada)->not->toBeNull()
+        ->and($presensi->pluck('tgl_presensi')->all())->toBe(['2026-11-23', '2026-11-24'])
+        ->and($presensi->pluck('status')->unique()->all())->toBe(['cuti']);
 });
 
 it('requires a valid selected pegawai', function () {

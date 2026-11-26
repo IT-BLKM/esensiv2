@@ -29,6 +29,7 @@
                 'batal' => route('admin.pengajuan.index'),
                 'daftarPegawai' => $daftarPegawai,
                 'pegawaiTerpilih' => $idPegawai,
+                'bisaLangsungSetujui' => true,
             ])
         </x-card>
     </div>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\HariLibur;
 use Carbon\CarbonImmutable;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -42,6 +43,7 @@ test('seeds the full development dataset when all migrations are available', fun
 
     $this->assertDatabaseCount('departemen', 5);
     $this->assertDatabaseCount('jam_kerja', 3);
+    $this->assertDatabaseCount('hari_libur', 21);
     $this->assertDatabaseCount('pegawai', 50);
     $this->assertDatabaseCount('cuti', 4);
     $this->assertDatabaseCount('user', 52);
@@ -68,9 +70,10 @@ test('seeds the full development dataset when all migrations are available', fun
     $awalBulanLalu = $sekarang->startOfMonth()->subMonth();
     $akhirBulanLalu = $awalBulanLalu->endOfMonth();
     $hariKerjaBulanLalu = [];
+    $hariLibur = array_fill_keys(HariLibur::dalamRentang($awalBulanLalu, $akhirBulanLalu), true);
 
     for ($tanggal = $awalBulanLalu; $tanggal->lte($akhirBulanLalu); $tanggal = $tanggal->addDay()) {
-        if (! $tanggal->isWeekend()) {
+        if (! $tanggal->isWeekend() && ! isset($hariLibur[$tanggal->toDateString()])) {
             $hariKerjaBulanLalu[] = $tanggal->toDateString();
         }
     }
@@ -131,6 +134,7 @@ test('seeder can be run twice without creating duplicate demo data', function ()
 
     $this->assertDatabaseCount('departemen', 5);
     $this->assertDatabaseCount('jam_kerja', 3);
+    $this->assertDatabaseCount('hari_libur', 21);
     $this->assertDatabaseCount('pegawai', 50);
     $this->assertDatabaseCount('user', 52);
     $this->assertDatabaseCount('konfigurasi_jam_kerja', 254);
@@ -157,6 +161,7 @@ test('production seeding only creates master data without demo accounts', functi
 
     $this->assertDatabaseCount('departemen', 5);
     $this->assertDatabaseCount('cuti', 4);
+    $this->assertDatabaseCount('hari_libur', 21);
     $this->assertDatabaseCount('user', 0);
     $this->assertDatabaseCount('pegawai', 0);
     $this->assertDatabaseCount('pengajuan', 0);

@@ -179,7 +179,7 @@ it('marks late cells and adds a TL column in the all-pegawai Excel matrix', func
 
     expect($header)->toContain('TL')
         ->and($header)->toContain('PSW')
-        ->and($dataRow)->toContain('H!')
+        ->and($dataRow)->toContain('TL1')
         ->and($dataRow)->toContain(1);
 });
 
@@ -237,12 +237,13 @@ it('renders late markers and TL in the all-pegawai PDF view', function () {
 
     expect($html)->toContain('TL')
         ->and($html)->toContain('PSW')
-        ->and($html)->toContain('H!')
-        ->and($html)->toContain('hadir terlambat')
+        ->and($html)->toContain('TL1')
+        ->and($html)->toContain('H! = terlambat tetapi sudah diganti')
+        ->and($html)->toContain('PSW1–PSW4')
         ->and($html)->toContain('pulang sebelum waktu');
 });
 
-it('renders the all-pegawai PDF with the A4 landscape report layout', function () {
+it('renders the all-pegawai PDF with the A4 portrait report layout', function () {
     $admin = User::factory()->create(['role' => 'admin']);
     $shift = shiftExportLaporan();
     $pegawai = pegawaiExportLaporan();
@@ -260,7 +261,7 @@ it('renders the all-pegawai PDF with the A4 landscape report layout', function (
     expect($html)->toContain('Laporan Presensi Pegawai Periode November 2026')
         ->and($html)->toContain('Bulan November 2026')
         ->and($html)->toContain('Ka. Subbag Administrasi Umum')
-        ->and($html)->toContain('@page { size: A4 landscape;');
+        ->and($html)->toContain('@page { size: A4 portrait;');
 });
 
 it('keeps a replaced lateness visible in the per-pegawai PDF', function () {

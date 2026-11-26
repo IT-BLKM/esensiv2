@@ -17,6 +17,8 @@
         ['label' => 'Departemen', 'icon' => 'departemen', 'route' => 'admin.departemen.index', 'pola' => 'admin.departemen.*'],
         ['label' => 'Jam Kerja', 'icon' => 'jam', 'route' => 'admin.jam-kerja.index', 'pola' => 'admin.jam-kerja.*'],
         ['label' => 'Cuti', 'icon' => 'cuti', 'route' => 'admin.cuti.index', 'pola' => 'admin.cuti.*'],
+        ['label' => 'Saldo Cuti', 'icon' => 'cuti', 'route' => 'admin.saldo-cuti.index', 'pola' => 'admin.saldo-cuti.*'],
+        ['label' => 'Hari Libur', 'icon' => 'cuti', 'route' => 'admin.hari-libur.index', 'pola' => 'admin.hari-libur.*'],
         ['label' => 'Monitoring', 'icon' => 'monitoring', 'route' => 'admin.monitoring.index', 'pola' => 'admin.monitoring.*'],
         ['label' => 'Pengajuan', 'icon' => 'pengajuan', 'route' => 'admin.pengajuan.index', 'pola' => 'admin.pengajuan.*'],
         ['label' => 'Laporan', 'icon' => 'laporan', 'route' => 'admin.laporan.index', 'pola' => 'admin.laporan.*'],

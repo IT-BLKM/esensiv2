@@ -2,8 +2,7 @@
 
 namespace App\Actions\Laporan;
 
-use App\Actions\Presensi\HitungMenitPulangCepatAction;
-use App\Actions\Presensi\HitungMenitTerlambatAction;
+use App\Models\HariLibur;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
 use App\Models\Presensi;
@@ -27,8 +26,7 @@ use Illuminate\Support\Facades\Gate;
 class LaporanSemuaPegawaiAction
 {
     public function __construct(
-        private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
-        private readonly HitungMenitPulangCepatAction $hitungMenitPulangCepat,
+        private readonly KlasifikasiHariPresensiAction $klasifikasi,
     ) {}
 
     /**
@@ -59,6 +57,7 @@ class LaporanSemuaPegawaiAction
         $awal = CarbonImmutable::create($tahun, $bulan, 1, 0, 0, 0, $zonaWaktu)->startOfMonth();
         $akhir = $awal->endOfMonth();
         $jumlahHari = $awal->daysInMonth;
+        $hariLibur = array_fill_keys(HariLibur::dalamRentang($awal, $akhir), true);
 
         $pegawai = Pegawai::query()
             ->with(['konfigurasiJamKerja:id_pegawai,hari,id_jam_kerja'])
@@ -66,7 +65,7 @@ class LaporanSemuaPegawaiAction
             ->get(['id', 'nip', 'nama']);
 
         $presensi = Presensi::query()
-            ->with(['jamKerja', 'pengajuan'])
+            ->with(['jamKerja', 'pengajuan', 'penggantianKeterlambatan'])
             ->whereBetween('tgl_presensi', [$awal->toDateString(), $akhir->toDateString()])
             ->get(['id_pegawai', 'id_jam_kerja', 'id_pengajuan', 'tgl_presensi', 'jam_masuk', 'jam_keluar', 'status'])
             ->groupBy('id_pegawai');
@@ -88,30 +87,31 @@ class LaporanSemuaPegawaiAction
                 $tanggal = $awal->setDay($hari);
                 $presensiHari = $petaPresensi->get($hari);
 
-                if ($presensiHari !== null) {
-                    $kode = $this->kodeStatus($presensiHari->status);
+                $kunciStatus = null;
 
-                    if ($kode === 'H' && ($this->hitungMenitTerlambat)($presensiHari) > 0) {
-                        $kode = 'H!';
+                if ($presensiHari !== null) {
+                    $klasifikasi = ($this->klasifikasi)($presensiHari);
+                    $kode = implode("\n", $klasifikasi['baris']);
+                    $kunciStatus = $klasifikasi['kodeStatus'];
+
+                    if ($klasifikasi['terlambat']) {
                         $hitung['TL']++;
                     }
 
-                    if ($kode === 'H' || $kode === 'H!') {
-                        if (($this->hitungMenitPulangCepat)($presensiHari) > 0) {
-                            $hitung['PSW']++;
-                        }
+                    if ($klasifikasi['pulangCepat']) {
+                        $hitung['PSW']++;
                     }
-                } elseif ($this->hariKerja($tanggal, $hariKerja)) {
+                } elseif (! isset($hariLibur[$tanggal->toDateString()]) && $this->hariKerja($tanggal, $hariKerja)) {
                     $kode = 'A';
+                    $kunciStatus = 'A';
                 } else {
                     $kode = null;
                 }
 
                 $sel[$hari] = $kode;
 
-                if ($kode !== null) {
-                    $kunci = $kode === 'H!' ? 'H' : $kode;
-                    $hitung[$kunci] = ($hitung[$kunci] ?? 0) + 1;
+                if ($kunciStatus !== null) {
+                    $hitung[$kunciStatus] = ($hitung[$kunciStatus] ?? 0) + 1;
                 }
             }
 
@@ -137,6 +137,10 @@ class LaporanSemuaPegawaiAction
                 range(1, $jumlahHari),
                 fn (int $hari): bool => $awal->setDay($hari)->isWeekend(),
             )),
+            'hariLibur' => array_values(array_map(
+                fn (string $tanggal): int => (int) Carbon::parse($tanggal)->day,
+                array_keys($hariLibur),
+            )),
             'baris' => $baris,
         ];
     }
@@ -156,16 +160,5 @@ class LaporanSemuaPegawaiAction
         }
 
         return in_array($namaHari, $hariKerja, true);
-    }
-
-    private function kodeStatus(string $status): string
-    {
-        return match ($status) {
-            'hadir' => 'H',
-            'dl' => 'DL',
-            'cuti' => 'C',
-            'sakit' => 'S',
-            default => 'A',
-        };
     }
 }

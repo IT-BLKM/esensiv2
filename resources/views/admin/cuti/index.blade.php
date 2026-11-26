@@ -12,7 +12,8 @@
         </div>
 
         <x-alert variant="info">
-            Saldo cuti pegawai disimpan terpisah di <code class="rounded bg-gray-100 px-1">saldo_cuti</code>. Halaman ini hanya mengatur aturan jenis cuti.
+            Halaman ini hanya mengatur aturan jenis cuti. Untuk mengisi tabungan/saldo awal pegawai,
+            gunakan <a href="{{ route('admin.saldo-cuti.index') }}" class="font-medium underline underline-offset-4">Saldo Cuti</a>.
         </x-alert>
 
         <x-card>

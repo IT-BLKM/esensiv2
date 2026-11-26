@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
 use App\Models\Cuti;
+use App\Models\HariLibur;
 use App\Models\JamKerja;
 use App\Models\KonfigurasiJamKerja;
 use App\Models\Pegawai;
@@ -77,6 +78,7 @@ class RiwayatPresensiSeeder extends Seeder
                 $presensi->id_pegawai.'|'.(string) $presensi->tgl_presensi => true,
             ])
             ->all();
+        $hariLibur = array_fill_keys(HariLibur::dalamRentang($mulai, $sekarang), true);
 
         foreach ($pegawai as $index => $item) {
             $hariKe = 0;
@@ -90,7 +92,7 @@ class RiwayatPresensiSeeder extends Seeder
                 }
 
                 for ($tanggal = $awal; $tanggal->lte($akhir); $tanggal = $tanggal->addDay()) {
-                    if ($tanggal->isWeekend()) {
+                    if ($tanggal->isWeekend() || isset($hariLibur[$tanggal->toDateString()])) {
                         continue;
                     }
 
