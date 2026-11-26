@@ -14,8 +14,11 @@ class DatabaseSeeder extends Seeder
      *
      * Akun (password semuanya "password"):
      * - admin@esensi.test
-     * - pegawai@esensi.test ... pegawai5@esensi.test
+     * - pegawai@esensi.test ... pegawai50@esensi.test
      * - tanpa-pegawai@esensi.test
+     *
+     * AktivitasSeeder membuat skenario demo utama lebih dulu; RiwayatPresensiSeeder
+     * mengisi sisanya sehingga total ada 50 pegawai dengan riwayat tiga bulan.
      */
     public function run(): void
     {
@@ -30,6 +33,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PenggunaSeeder::class,
             AktivitasSeeder::class,
+            RiwayatPresensiSeeder::class,
         ]);
     }
 }

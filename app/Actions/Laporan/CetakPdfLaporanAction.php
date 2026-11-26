@@ -64,6 +64,10 @@ class CetakPdfLaporanAction
      */
     private function render(string $view, array $data, string $orientasi): string
     {
+        // Matriks 50 pegawai x 31 hari membuat Dompdf memakai >100 MB. Naikkan
+        // batas per request agar ekspor tidak gagal pada php.ini 128 MB.
+        ini_set('memory_limit', '512M');
+
         $options = new Options;
         $options->set('defaultFont', 'DejaVu Sans');
         $options->set('isHtml5ParserEnabled', true);
