@@ -11,6 +11,7 @@ use App\Models\Pegawai;
 use App\Models\Pengajuan;
 use App\Models\PenggantianKeterlambatan;
 use App\Models\Presensi;
+use App\Models\TukinPeriode;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
@@ -54,6 +55,11 @@ class StorePresensiAction
     public function __invoke(Pegawai $pegawai, array $data): array
     {
         $sekarang = CarbonImmutable::now((string) config('presensi.zona_waktu', 'Asia/Jakarta'));
+
+        if (TukinPeriode::terkunci($sekarang->year, $sekarang->month)) {
+            throw PresensiException::periodeTerkunci();
+        }
+
         $jenis = $data['jenis'];
         $konfirmasiPulangCepat = (bool) ($data['konfirmasi_pulang_cepat'] ?? false);
         $koordinat = $this->normalisasiKoordinat($data['koordinat']);

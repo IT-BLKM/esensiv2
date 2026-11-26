@@ -5,6 +5,7 @@ namespace App\Actions\Laporan;
 use App\Actions\Presensi\HitungMenitPulangCepatAction;
 use App\Actions\Presensi\HitungMenitTerlambatAction;
 use App\Actions\Presensi\HitungPenggantianKeterlambatanAction;
+use App\Actions\Tunjangan\AmbilTingkatTunjanganAction;
 use App\Models\JamKerja;
 use App\Models\Pegawai;
 use App\Models\Pengajuan;
@@ -36,6 +37,7 @@ class HitungPotonganTunjanganKinerjaAction
         private readonly HitungMenitTerlambatAction $hitungMenitTerlambat,
         private readonly HitungMenitPulangCepatAction $hitungMenitPulangCepat,
         private readonly HitungPenggantianKeterlambatanAction $hitungPenggantian,
+        private readonly AmbilTingkatTunjanganAction $ambilTingkat,
     ) {}
 
     /**
@@ -77,7 +79,8 @@ class HitungPotonganTunjanganKinerjaAction
      *         totalMenitPulangCepat: int,
      *         totalPersenTl: float,
      *         totalPersenPsw: float,
-     *         totalPersen: float
+     *         totalPersen: float,
+     *         persenTingkat: array<string, float>
      *     }
      * }
      */
@@ -94,6 +97,22 @@ class HitungPotonganTunjanganKinerjaAction
             ->get();
 
         return $this->ringkas($presensi, $mulai, $selesai);
+    }
+
+    /**
+     * Hitung dari koleksi presensi yang sudah dimuat (menghindari N+1 pada
+     * rekap tren tahunan).
+     *
+     * @param  Collection<int, Presensi>  $presensi
+     * @return array<string, mixed>
+     */
+    public function dariPresensi(Collection $presensi, CarbonInterface $mulai, CarbonInterface $selesai): array
+    {
+        return $this->ringkas(
+            $presensi,
+            CarbonImmutable::parse($mulai->format('Y-m-d'))->startOfDay(),
+            CarbonImmutable::parse($selesai->format('Y-m-d'))->startOfDay(),
+        );
     }
 
     /**
@@ -167,7 +186,8 @@ class HitungPotonganTunjanganKinerjaAction
      *         totalMenitPulangCepat: int,
      *         totalPersenTl: float,
      *         totalPersenPsw: float,
-     *         totalPersen: float
+     *         totalPersen: float,
+     *         persenTingkat: array<string, float>
      *     }
      * }
      */
@@ -237,6 +257,15 @@ class HitungPotonganTunjanganKinerjaAction
                 'totalPersenTl' => $totalPersenTl,
                 'totalPersenPsw' => $totalPersenPsw,
                 'totalPersen' => round($totalPersenTl + $totalPersenPsw, 2),
+                'persenTingkat' => [
+                    'TL1' => $this->persenUntuk('keterlambatan', 'TL1'),
+                    'TL2' => $this->persenUntuk('keterlambatan', 'TL2'),
+                    'TL3' => $this->persenUntuk('keterlambatan', 'TL3'),
+                    'PSW1' => $this->persenUntuk('pulang_cepat', 'PSW1'),
+                    'PSW2' => $this->persenUntuk('pulang_cepat', 'PSW2'),
+                    'PSW3' => $this->persenUntuk('pulang_cepat', 'PSW3'),
+                    'PSW4' => $this->persenUntuk('pulang_cepat', 'PSW4'),
+                ],
             ],
         ];
     }
@@ -404,7 +433,7 @@ class HitungPotonganTunjanganKinerjaAction
      */
     private function daftarTingkat(string $kunci): Collection
     {
-        return collect(config("tunjangan.{$kunci}", []));
+        return ($this->ambilTingkat)($kunci);
     }
 
     /**

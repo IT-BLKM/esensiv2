@@ -122,6 +122,18 @@
                 </x-card>
             @endif
 
+            <x-card title="Potongan TUKIN" subtitle="Rincian potongan dari keterlambatan dan pulang sebelum waktu.">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm text-gray-600">
+                        Lihat rincian per tanggal, tingkat TL/PSW, dan potongan rupiah bila nominal TUKIN sudah diatur.
+                    </p>
+                    <a
+                        href="{{ route('tukin.index') }}"
+                        class="rounded-md border border-brand-600 bg-white px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                    >Lihat rincian TUKIN</a>
+                </div>
+            </x-card>
+
             <x-card
                 title="Rekap {{ $bulanIni['label'] }}"
                 subtitle="Hadir berarti masuk tepat waktu; terlambat dihitung sebagai angka terpisah."

@@ -6,6 +6,7 @@ use App\Actions\Laporan\RekapKehadiranAction;
 use App\Actions\Pengajuan\CariPengajuanDlHariIniAction;
 use App\Actions\Pengaturan\AmbilLokasiKantorAction;
 use App\Http\Controllers\Controller;
+use App\Models\TukinPeriode;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class PresensiHalamanController extends Controller
         return view('pegawai.presensi', [
             'hariIni' => $pegawai === null ? null : $rekap->hariIni($pegawai),
             'pengajuanDl' => $pegawai === null ? null : $cariDlHariIni($pegawai, $sekarang),
+            'periodeTerkunci' => TukinPeriode::terkunci($sekarang->year, $sekarang->month),
             'kantor' => [
                 'latitude' => (float) $lokasi['latitude'],
                 'longitude' => (float) $lokasi['longitude'],

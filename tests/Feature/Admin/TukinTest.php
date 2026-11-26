@@ -100,7 +100,45 @@ it('shows the detail of where the deduction came from when a pegawai is selected
         ->assertSee('PSW1')
         ->assertSee('30 menit')
         ->assertSee('Excel pegawai ini')
-        ->assertSee('PDF pegawai ini');
+        ->assertSee('PDF pegawai ini')
+        ->assertSee('Cetak slip PDF');
+});
+
+it('shows per-department recap and yearly trend', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftTukin();
+    $pegawai = pegawaiTukin();
+
+    presensiTukin($pegawai, $shift, '2026-11-02', '08:00:00', '16:00:00');
+
+    $this->actingAs($admin)->get(route('admin.tukin.index', [
+        'bulan' => 11,
+        'tahun' => 2026,
+    ]))
+        ->assertOk()
+        ->assertSee('Rekap per departemen')
+        ->assertSee('Tren potongan 2026')
+        ->assertSee('November');
+});
+
+it('downloads the per-pegawai tukin slip as pdf', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $shift = shiftTukin();
+    $pegawai = pegawaiTukin();
+
+    presensiTukin($pegawai, $shift, '2026-11-02', '08:00:00', '16:00:00');
+
+    $response = $this->actingAs($admin)->get(route('admin.tukin.slip', [
+        'pegawai' => $pegawai->id,
+        'bulan' => 11,
+        'tahun' => 2026,
+    ]));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertDownload('slip-tukin-budi-santoso-2026-11.pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
 });
 
 it('downloads the tukin recap as excel and pdf', function () {

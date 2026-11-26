@@ -4,6 +4,7 @@ namespace App\Actions\Pengajuan;
 
 use App\Models\Pengajuan;
 use App\Models\Presensi;
+use App\Models\TukinPeriode;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -53,6 +54,12 @@ class ApprovePengajuanAction
 
                 $mulai = CarbonImmutable::parse((string) $terkunci->tanggal_mulai)->startOfDay();
                 $selesai = CarbonImmutable::parse((string) $terkunci->tanggal_berakhir)->startOfDay();
+
+                if (TukinPeriode::adaTerkunciDalamRentang($mulai, $selesai)) {
+                    throw ValidationException::withMessages([
+                        'pengajuan' => 'Tidak bisa disetujui: periode TUKIN pada rentang ini sudah dikunci.',
+                    ]);
+                }
 
                 $presensiBentrok = Presensi::query()
                     ->where('id_pegawai', $terkunci->id_pegawai)

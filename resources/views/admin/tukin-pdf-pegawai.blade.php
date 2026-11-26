@@ -105,8 +105,24 @@
             <td><strong>Hari diganti:</strong> {{ $data['ringkasan']['jumlahPenggantian'] }}</td>
             <td><strong>Total % TL:</strong> {{ number_format($data['ringkasan']['totalPersenTl'], 2, ',', '.') }}%</td>
             <td><strong>Total % PSW:</strong> {{ number_format($data['ringkasan']['totalPersenPsw'], 2, ',', '.') }}%</td>
-            <td colspan="4"><strong>Total potongan:</strong> {{ number_format($data['ringkasan']['totalPersen'], 2, ',', '.') }}%</td>
+            <td><strong>Koreksi:</strong> {{ number_format($data['ringkasan']['koreksiPersen'], 2, ',', '.') }}%</td>
         </tr>
+        <tr>
+            <td><strong>Total sebelum koreksi:</strong> {{ number_format($data['ringkasan']['totalPersenAwal'], 2, ',', '.') }}%</td>
+            <td><strong>Total akhir:</strong> {{ number_format($data['ringkasan']['totalPersenAkhir'], 2, ',', '.') }}%</td>
+            <td><strong>Nominal:</strong> {{ $data['ringkasan']['nominal'] === null ? '—' : 'Rp '.number_format($data['ringkasan']['nominal'], 0, ',', '.') }}</td>
+            <td colspan="3"><strong>Potongan:</strong> {{ $data['ringkasan']['potonganNominal'] === null ? '—' : 'Rp '.number_format($data['ringkasan']['potonganNominal'], 0, ',', '.') }}</td>
+        </tr>
+        @if (! empty($data['koreksi']))
+            <tr>
+                <td colspan="7">
+                    <strong>Koreksi manual:</strong>
+                    @foreach ($data['koreksi'] as $koreksi)
+                        {{ number_format($koreksi['persen'], 2, ',', '.') }}% ({{ $koreksi['alasan'] }})@if (! $loop->last), @endif
+                    @endforeach
+                </td>
+            </tr>
+        @endif
     </table>
 
     <div class="footer">

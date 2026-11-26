@@ -41,6 +41,7 @@ class TulisExcelTukinAction
                 'No.', 'NIP', 'Nama Pegawai', 'Departemen',
                 'TL1', 'TL2', 'TL3', 'PSW1', 'PSW2', 'PSW3', 'PSW4',
                 'Hari diganti', 'Total % TL', 'Total % PSW', 'Total %',
+                'Koreksi %', 'Total akhir %', 'Nominal', 'Potongan Rp',
             ];
             $writer->addRow(Row::fromValuesWithStyle($kolom, $header));
 
@@ -62,9 +63,13 @@ class TulisExcelTukinAction
                     $ringkasan['totalPersenTl'],
                     $ringkasan['totalPersenPsw'],
                     $ringkasan['totalPersen'],
+                    $ringkasan['koreksiPersen'],
+                    $ringkasan['totalPersenAkhir'],
+                    $ringkasan['nominal'] === null ? '-' : $ringkasan['nominal'],
+                    $ringkasan['potonganNominal'] === null ? '-' : $ringkasan['potonganNominal'],
                 ];
 
-                $writer->addRow($this->barisData($nilai, $ringkasan['totalPersen'] > 0));
+                $writer->addRow($this->barisData($nilai, $ringkasan['totalPersenAkhir'] > 0));
             }
 
             $writer->addRow(Row::fromValues([]));
@@ -79,6 +84,10 @@ class TulisExcelTukinAction
             $sheet->setColumnWidth(28, 3);
             $sheet->setColumnWidth(18, 4);
             $sheet->setColumnWidthForRange(6, 5, 15);
+            $sheet->setColumnWidth(9, 16);
+            $sheet->setColumnWidth(9, 17);
+            $sheet->setColumnWidth(14, 18);
+            $sheet->setColumnWidth(14, 19);
         });
     }
 
@@ -144,7 +153,13 @@ class TulisExcelTukinAction
                 "Hari diganti: {$ringkasan['jumlahPenggantian']}, "
                 ."Total % TL: {$ringkasan['totalPersenTl']}, "
                 ."Total % PSW: {$ringkasan['totalPersenPsw']}, "
-                ."Total %: {$ringkasan['totalPersen']}",
+                ."Total sebelum koreksi: {$ringkasan['totalPersen']}",
+            ]));
+            $writer->addRow(Row::fromValues([
+                "Koreksi: {$ringkasan['koreksiPersen']}%, "
+                ."Total akhir: {$ringkasan['totalPersenAkhir']}%, "
+                .'Nominal: '.($ringkasan['nominal'] === null ? 'belum diatur' : $ringkasan['nominal']).', '
+                .'Potongan: '.($ringkasan['potonganNominal'] === null ? '-' : $ringkasan['potonganNominal']),
             ]));
 
             $sheet = $writer->getCurrentSheet();

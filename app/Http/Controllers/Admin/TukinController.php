@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Actions\Laporan\HitungPotonganTunjanganKinerjaAction;
 use App\Actions\Laporan\RekapTukinSemuaPegawaiAction;
+use App\Actions\Tukin\AmbilDetailTukinAction;
+use App\Actions\Tukin\TrenTukinTahunanAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TukinRequest;
 use App\Models\Pegawai;
 use App\Models\Presensi;
+use App\Models\TukinPeriode;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -18,7 +20,8 @@ class TukinController extends Controller
     public function __invoke(
         TukinRequest $request,
         RekapTukinSemuaPegawaiAction $rekap,
-        HitungPotonganTunjanganKinerjaAction $hitungTukin,
+        AmbilDetailTukinAction $ambilDetail,
+        TrenTukinTahunanAction $trenTukin,
     ): View {
         /** @var User $user */
         $user = $request->user();
@@ -39,21 +42,53 @@ class TukinController extends Controller
         }
 
         $hasil = $rekap($user, $tahun, $bulan);
-        $detail = $pegawai === null
+        $perDepartemen = collect($hasil['baris'])
+            ->groupBy(fn (array $item): string => $item['departemen'] ?? 'Tanpa departemen')
+            ->map(function ($rows, string $nama): array {
+                $ringkasan = $rows->pluck('ringkasan');
+                $nominal = $ringkasan->pluck('potonganNominal')->filter(fn (mixed $nilai): bool => $nilai !== null);
+
+                return [
+                    'departemen' => $nama,
+                    'jumlahPegawai' => $rows->count(),
+                    'pegawaiKena' => $rows->filter(fn (array $item): bool => $item['ringkasan']['totalPersenAkhir'] > 0)->count(),
+                    'totalPersenTl' => round($ringkasan->sum('totalPersenTl'), 2),
+                    'totalPersenPsw' => round($ringkasan->sum('totalPersenPsw'), 2),
+                    'totalPersenAkhir' => round($ringkasan->sum('totalPersenAkhir'), 2),
+                    'potonganNominal' => $nominal->isEmpty() ? null : (int) $nominal->sum(),
+                ];
+            })
+            ->sortByDesc('totalPersenAkhir')
+            ->values()
+            ->all();
+        $tren = $trenTukin($user, $tahun);
+        $detail = null;
+
+        if ($pegawai !== null) {
+            $detail = $ambilDetail($pegawai, $tahun, $bulan);
+        }
+
+        $periode = $bulan === null
             ? null
-            : ($bulan === null
-                ? $hitungTukin->tahunan($pegawai, $tahun)
-                : $hitungTukin->bulanan($pegawai, $tahun, $bulan));
+            : TukinPeriode::query()
+                ->with('dikunciOleh:id,nama')
+                ->where('tahun', $tahun)
+                ->where('bulan', $bulan)
+                ->first();
 
         return view('admin.tukin', [
             'baris' => $hasil['baris'],
             'ringkasan' => $hasil['ringkasan'],
+            'perDepartemen' => $perDepartemen,
+            'tren' => $tren,
             'labelPeriode' => $hasil['labelPeriode'],
             'detail' => $detail,
             'pegawai' => $pegawai,
             'idPegawai' => $idPegawai,
             'bulan' => $bulan,
             'tahun' => $tahun,
+            'periode' => $periode,
+            'terkunci' => $periode !== null && $periode->terkunci,
             'daftarPegawai' => Pegawai::query()->orderBy('nama')->get(['id', 'nip', 'nama']),
             'pilihanBulan' => $this->pilihanBulan(),
             'pilihanTahun' => $this->pilihanTahun($sekarang->year, $tahun),
