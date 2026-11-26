@@ -23,6 +23,7 @@
         ['label' => 'Pengajuan', 'icon' => 'pengajuan', 'route' => 'admin.pengajuan.index', 'pola' => 'admin.pengajuan.*'],
         ['label' => 'Laporan', 'icon' => 'laporan', 'route' => 'admin.laporan.index', 'pola' => 'admin.laporan.*'],
         ['label' => 'Rekap', 'icon' => 'laporan', 'route' => 'admin.rekap.index', 'pola' => 'admin.rekap.*'],
+        ['label' => 'TUKIN', 'icon' => 'tukin', 'route' => 'admin.tukin.index', 'pola' => 'admin.tukin.*'],
         ['label' => 'Konfigurasi', 'icon' => 'konfigurasi', 'route' => 'admin.konfigurasi.index', 'pola' => 'admin.konfigurasi.*'],
     ];
 @endphp

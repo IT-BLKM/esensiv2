@@ -49,20 +49,8 @@ parameters:
 			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$kode\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$mode_dl\.$#'
 			identifier: property.notFound
-			count: 1
-			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
-
-		-
-			message: '#^Offset ''penggantianTerpenuhi'' does not exist on array\{tanggal\: string, menitTerlambat\: int\|null, levelTl\: string\|null, persenTl\: float, menitPulangCepat\: int\|null, levelPsw\: string\|null, persenPsw\: float, persenTotal\: float\}\.$#'
-			identifier: offsetAccess.notFound
 			count: 1
 			path: app/Actions/Laporan/HitungPotonganTunjanganKinerjaAction.php
 

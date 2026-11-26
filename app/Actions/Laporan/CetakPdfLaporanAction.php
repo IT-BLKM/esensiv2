@@ -3,12 +3,9 @@
 namespace App\Actions\Laporan;
 
 use App\Models\Pegawai;
-use Dompdf\Dompdf;
-use Dompdf\Options;
-use Illuminate\Support\Facades\File;
 
 /**
- * Render laporan presensi ke PDF dengan Dompdf.
+ * Render laporan presensi ke PDF dengan header Kemenkes.
  *
  * Foto hanya dimuat untuk laporan per pegawai. File foto tetap berasal dari
  * disk privat dan dikirim ke PDF sebagai data URI, bukan URL publik.
@@ -17,6 +14,7 @@ class CetakPdfLaporanAction
 {
     public function __construct(
         private readonly KeteranganPresensiAction $keterangan,
+        private readonly RenderPdfAction $renderPdf,
     ) {}
 
     /**
@@ -36,14 +34,12 @@ class CetakPdfLaporanAction
             ];
         }, $data['baris']);
 
-        return $this->render('admin.laporan-pdf-pegawai', [
+        return $this->renderPdf->render('admin.laporan-pdf-pegawai', [
             'data' => $data,
             'pegawai' => $pegawai,
             'baris' => $baris,
-            'logo' => $this->logo(),
-            'namaKantor' => (string) config('presensi.nama_kantor'),
-            'alamatKantor' => (string) config('presensi.alamat_kantor'),
-        ], 'portrait');
+            ...$this->renderPdf->kop(),
+        ]);
     }
 
     /**
@@ -51,48 +47,9 @@ class CetakPdfLaporanAction
      */
     public function semua(array $data): string
     {
-        return $this->render('admin.laporan-pdf-semua', [
+        return $this->renderPdf->render('admin.laporan-pdf-semua', [
             'data' => $data,
-            'logo' => $this->logo(),
-            'namaKantor' => (string) config('presensi.nama_kantor'),
-            'alamatKantor' => (string) config('presensi.alamat_kantor'),
-        ], 'portrait');
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function render(string $view, array $data, string $orientasi): string
-    {
-        // Matriks 50 pegawai x 31 hari membuat Dompdf memakai >100 MB. Naikkan
-        // batas per request agar ekspor tidak gagal pada php.ini 128 MB.
-        ini_set('memory_limit', '512M');
-
-        $options = new Options;
-        $options->set('defaultFont', 'DejaVu Sans');
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', false);
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml(view($view, $data)->render(), 'UTF-8');
-        $dompdf->setPaper('A4', $orientasi);
-        $dompdf->render();
-
-        return (string) $dompdf->output();
-    }
-
-    private function logo(): ?string
-    {
-        $path = public_path('images/logo-kemenkes.png');
-
-        if (! File::exists($path)) {
-            $path = public_path('images/logo-esensi-transparan.png');
-        }
-
-        if (! File::exists($path)) {
-            return null;
-        }
-
-        return 'data:image/png;base64,'.base64_encode((string) File::get($path));
+            ...$this->renderPdf->kop(),
+        ]);
     }
 }
